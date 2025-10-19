@@ -402,16 +402,20 @@ def _handle_existing_cookie_check(nmp_user_id, nmp_username, channel_id=None, no
     logger.info(f"Found existing cookie for user {nmp_user_id}")
     logger.info(f"Channel ID: {channel_id}, Node ID: {node_id}")
     
-    # Get NSN user information
+    # Get NSN user information using the existing session cookie
     nsn_username = existing_cookie.username
     nsn_user_id = None
     
     try:
-        nsn_user_info = nsn_client.query_user_info(nsn_username)
+        # Use the existing session cookie to get current user info
+        nsn_user_info = nsn_client.get_current_user(existing_cookie.cookie)
         if nsn_user_info.get('success'):
             nsn_user_id = nsn_user_info.get('user_id')
+            logger.info(f"Retrieved NSN user info from existing session: {nsn_username} (ID: {nsn_user_id})")
+        else:
+            logger.warning(f"Failed to get NSN user info from existing session: {nsn_user_info.get('error')}")
     except Exception as e:
-        logger.warning(f"Error querying NSN user info: {e}")
+        logger.warning(f"Error getting NSN user info from existing session: {e}")
     
     # Send session to C-Client with cluster verification
     try:
