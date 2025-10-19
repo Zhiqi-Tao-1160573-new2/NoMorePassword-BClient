@@ -675,10 +675,28 @@ class CClientWebSocketClient:
             return get_current_websocket_config()
         except Exception as e:
             self.logger.warning(f"Error loading WebSocket config: {e}")
+            # Use HTTP port for WebSocket in production (Heroku)
+            import os
+            from utils.config_manager import get_current_environment
+            
+            environment = get_current_environment()
+            if environment == 'local':
+                websocket_port = 8766
+            else:
+                # In production, use HTTP port for WebSocket
+                websocket_port = int(os.environ.get('PORT', 8000))
+            
+            # In ASGI mode (Heroku), disable separate WebSocket server
+            # WebSocket handling is integrated into ASGI app
+            if environment == 'local':
+                enabled = True
+            else:
+                enabled = False  # Disable separate server in production (ASGI handles it)
+            
             return {
-                'enabled': True,
+                'enabled': enabled,
                 'server_host': '0.0.0.0',
-                'server_port': 8766,
+                'server_port': websocket_port,
                 'auto_reconnect': True,
                 'reconnect_interval': 30
             }
