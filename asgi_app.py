@@ -109,27 +109,61 @@ try:
                                 print(f"🔧 [ASGI] Processing C-Client registration...")
                                 logger.info("Processing C-Client registration")
                                 
-                                # Send registration response
-                                response = {
-                                    "type": "c_client_registered",
-                                    "data": {
-                                        "success": True,
-                                        "message": "C-Client registered successfully",
-                                        "client_id": data.get("client_id"),
-                                        "user_id": data.get("user_id"),
-                                        "username": data.get("username"),
-                                        "node_id": data.get("node_id"),
-                                        "timestamp": int(time.time() * 1000)
+                                # Import and use the real registration logic
+                                try:
+                                    from services.websocket_client import CClientWebSocketClient
+                                    
+                                    # Create a mock websocket for the registration process
+                                    class RegistrationWebSocket:
+                                        def __init__(self, send_func):
+                                            self.send_func = send_func
+                                            self.remote_address = (client_host, client_port)
+                                            self.local_address = (server_host, server_port)
+                                            self.path = path
+                                        
+                                        async def send(self, message):
+                                            await self.send_func({
+                                                "type": "websocket.send",
+                                                "text": message
+                                            })
+                                    
+                                    # Create WebSocket client and process registration
+                                    ws_client = CClientWebSocketClient()
+                                    reg_websocket = RegistrationWebSocket(send)
+                                    
+                                    print(f"🔧 [ASGI] Calling real registration logic...")
+                                    logger.info("Calling real registration logic")
+                                    
+                                    # Process the registration using real logic
+                                    await ws_client._process_c_client_registration(reg_websocket, data, start_message_loop=False)
+                                    
+                                    print(f"✅ [ASGI] Real registration logic completed")
+                                    logger.info("Real registration logic completed")
+                                    
+                                except Exception as reg_error:
+                                    print(f"❌ [ASGI] Registration error: {reg_error}")
+                                    logger.error(f"Registration error: {reg_error}")
+                                    import traceback
+                                    logger.error(f"Registration traceback: {traceback.format_exc()}")
+                                    
+                                    # Fallback: Send simple response
+                                    response = {
+                                        "type": "c_client_registered",
+                                        "data": {
+                                            "success": False,
+                                            "message": f"Registration failed: {reg_error}",
+                                            "client_id": data.get("client_id"),
+                                            "user_id": data.get("user_id"),
+                                            "username": data.get("username"),
+                                            "node_id": data.get("node_id"),
+                                            "timestamp": int(time.time() * 1000)
+                                        }
                                     }
-                                }
-                                
-                                await send({
-                                    "type": "websocket.send",
-                                    "text": json.dumps(response)
-                                })
-                                
-                                print(f"✅ [ASGI] Registration response sent")
-                                logger.info("Registration response sent")
+                                    
+                                    await send({
+                                        "type": "websocket.send",
+                                        "text": json.dumps(response)
+                                    })
                             
                             else:
                                 # Echo other messages for now
