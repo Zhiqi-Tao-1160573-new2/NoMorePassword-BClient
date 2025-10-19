@@ -77,7 +77,14 @@ try:
                 logger.info("WebSocket connection accepted")
                 
                 # Import and initialize the real WebSocket client
-                from services.websocket_client import c_client_ws
+                try:
+                    from services.websocket_client import c_client_ws
+                    print(f"✅ [ASGI] Successfully imported c_client_ws: {c_client_ws}")
+                    logger.info(f"Successfully imported c_client_ws: {c_client_ws}")
+                except Exception as import_error:
+                    print(f"❌ [ASGI] Failed to import c_client_ws: {import_error}")
+                    logger.error(f"Failed to import c_client_ws: {import_error}")
+                    raise
                 
                 # Create a mock websocket object that implements the websockets interface
                 class MockWebSocket:
@@ -103,8 +110,20 @@ try:
                                 raise websockets.exceptions.ConnectionClosed(None, None)
                 
                 # Create mock websocket and handle connection
+                print(f"🔧 [ASGI] Creating MockWebSocket adapter...")
+                logger.info("Creating MockWebSocket adapter")
+                
                 mock_websocket = MockWebSocket(send, receive)
+                print(f"✅ [ASGI] MockWebSocket created successfully")
+                logger.info("MockWebSocket created successfully")
+                
+                print(f"🔧 [ASGI] Calling handle_c_client_connection...")
+                logger.info("Calling handle_c_client_connection")
+                
                 await c_client_ws.handle_c_client_connection(mock_websocket)
+                
+                print(f"✅ [ASGI] handle_c_client_connection completed")
+                logger.info("handle_c_client_connection completed")
                         
             except Exception as e:
                 print(f"❌ [ASGI] WebSocket error: {e}")
