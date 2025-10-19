@@ -30,6 +30,10 @@ eventlet==0.39.1
 gevent==25.5.1
 greenlet==3.2.2
 
+# ASGI server and WSGI-to-ASGI adapter
+hypercorn==0.17.2
+asgiref==3.8.1
+
 # Configuration and environment
 python-dotenv==1.0.1
 python-dateutil==2.9.0.post0
