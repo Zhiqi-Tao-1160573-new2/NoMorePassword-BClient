@@ -1,5 +1,5 @@
 {
-  "current_environment": "local",
+  "current_environment": "production",
   "environments": {
     "local": {
       "name": "local",
