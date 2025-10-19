@@ -4,13 +4,17 @@ ASGI Application for B-Client
 Combines Flask HTTP routes with WebSocket server using Hypercorn
 """
 
+# Standard library imports
 import os
 import asyncio
 import threading
+import traceback
+
+# Third-party imports
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 
-# Import Flask app and WebSocket client
+# Local imports
 from app import app, c_client_ws
 from utils.logger import get_bclient_logger
 
@@ -53,7 +57,6 @@ async def start_websocket_server_background():
     except Exception as e:
         print(f"❌ [ASGI] WebSocket server error: {e}")
         logger.error(f"❌ WebSocket server error: {e}")
-        import traceback
         print(f"❌ [ASGI] Traceback: {traceback.format_exc()}")
         logger.error(traceback.format_exc())
 
@@ -136,8 +139,6 @@ __all__ = ['asgi_app', 'get_asgi_app']
 
 # For testing/direct usage
 if __name__ == "__main__":
-    import asyncio
-    
     async def main():
         print(f"🚀 [ASGI] Starting main function...")
         # Start WebSocket server
