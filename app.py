@@ -796,8 +796,15 @@ init_nsn_api_routes(db, UserCookie, nsn_client)
 init_c_client_api_routes(c_client_ws)
 # Note: init_bind_routes and send_session_to_client injection will be called after send_session_to_client is defined
 
-# Start WebSocket server when app starts
-start_websocket_server()
+# Start WebSocket server when app starts (only in local mode)
+# In ASGI mode (production), WebSocket handling is integrated into ASGI app
+from utils.config_manager import get_current_environment
+environment = get_current_environment()
+if environment == 'local':
+    start_websocket_server()
+else:
+    print(f"🔧 [App] ASGI mode detected - WebSocket handling integrated into ASGI app")
+    logger.info("ASGI mode detected - WebSocket handling integrated into ASGI app")
 
 # NSN API Routes
 @app.route('/api/nsn/user-info', methods=['POST'])
