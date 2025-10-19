@@ -102,6 +102,28 @@ class ASGIAppWithWebSocket:
                 @property
                 def closed(self):
                     return self._closed
+                
+                # Add iterator methods for async for loop support
+                def __aiter__(self):
+                    return self
+                
+                async def __anext__(self):
+                    if self._closed:
+                        raise StopAsyncIteration
+                    
+                    try:
+                        message = await self.receive_func()
+                        if message["type"] == "websocket.receive":
+                            return message.get("text", "")
+                        elif message["type"] == "websocket.disconnect":
+                            self._closed = True
+                            raise StopAsyncIteration
+                        else:
+                            # Skip non-receive messages and continue
+                            return await self.__anext__()
+                    except Exception as e:
+                        self._closed = True
+                        raise StopAsyncIteration
             
             # Create the adapter and use it with the real WebSocket service
             websocket_adapter = ASGIWebSocketAdapter(send, receive)
