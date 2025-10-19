@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}B-Client (Enterprise Client){% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="logo">🏢</div>
+    <h1>B-Client</h1>
+    <div class="subtitle">Enterprise Client</div>
+
+    <div class="description">
+        This is an enterprise-level client providing advanced features and data isolation.
+        Click the button below to access the dashboard.
+    </div>
+
+    <button class="switch-button" onclick="window.location.href='/dashboard'">
+        📊 Go to Dashboard
+    </button>
+
+    <div class="features">
+        <div class="feature-item">
+            <span class="feature-icon">🔒</span>
+            <span>Complete Data Isolation</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">⚡</span>
+            <span>Enterprise Performance</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">🛡️</span>
+            <span>Enhanced Security</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">📊</span>
+            <span>Detailed Analytics</span>
+        </div>
+    </div>
+
+    <div class="status">
+        <strong>Status:</strong> B-Client is running normally
+    </div>
+</div>
+{% endblock %}

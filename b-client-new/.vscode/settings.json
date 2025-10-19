@@ -1,0 +1,9 @@
+{
+    "python.defaultInterpreterPath": "python",
+    "python.analysis.extraPaths": [
+        "."
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false
+}

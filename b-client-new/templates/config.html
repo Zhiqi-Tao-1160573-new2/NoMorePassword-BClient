@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}B-Client Configuration{% endblock %}
+
+{% block content %}
+<div class="config-container">
+    <div class="config-header">
+        <div class="config-title">B-Client Configuration</div>
+        <div class="config-subtitle">Enterprise Client Settings</div>
+    </div>
+
+    <div class="client-info">
+        <div class="client-name">Enterprise Client (B-Client)</div>
+        <div class="client-description">
+            Advanced API server with auto-registration, cookie management, and dashboard monitoring.
+        </div>
+    </div>
+
+    <div class="config-options">
+        <div class="option-group">
+            <div class="option-label">Environment</div>
+            <div class="option-description">
+                Choose between local development or production NSN website.
+            </div>
+            <div class="env-options">
+                <button class="env-button" id="localEnv" data-env="local">
+                    <span class="env-icon">🏠</span>
+                    <div class="env-text">
+                        <div>Local Development</div>
+                        <div class="env-description">localhost:5000</div>
+                    </div>
+                </button>
+                <button class="env-button" id="productionEnv" data-env="production">
+                    <span class="env-icon">🌐</span>
+                    <div class="env-text">
+                        <div>Production</div>
+                        <div class="env-description">comp693nsnproject.pythonanywhere.com</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+
+        <div class="option-group">
+            <div class="option-label">Database</div>
+            <div class="option-description">
+                Manage database settings and view statistics.
+            </div>
+            <button class="switch-button" id="viewDatabase">
+                View Database Info
+            </button>
+        </div>
+    </div>
+
+    <button class="close-button" id="closeConfig">
+        Close
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize environment selection
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            // Get current environment from server
+            const response = await fetch('/api/config/environment');
+            const data = await response.json();
+            const currentEnv = data.environment || 'local';
+            updateEnvironmentUI(currentEnv);
+        } catch (error) {
+            console.error('Error loading environment:', error);
+            // Fallback to localStorage or default
+            const currentEnv = localStorage.getItem('bclient-environment') || 'local';
+            updateEnvironmentUI(currentEnv);
+        }
+    });
+
+    // Environment button event listeners
+    document.getElementById('localEnv').addEventListener('click', () => {
+        setEnvironment('local');
+    });
+
+
+    document.getElementById('productionEnv').addEventListener('click', () => {
+        setEnvironment('production');
+    });
+
+    async function setEnvironment(env) {
+        // Save to localStorage for UI consistency
+        localStorage.setItem('bclient-environment', env);
+        updateEnvironmentUI(env);
+
+        // Save to server
+        try {
+            const response = await fetch('/api/config/environment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ environment: env })
+            });
+
+            if (response.ok) {
+                console.log(`Environment configuration saved: ${env}`);
+                let envName;
+                if (env === 'local') {
+                    envName = 'Local Development (localhost:5000)';
+                } else {
+                    envName = 'Production (comp693nsnproject.pythonanywhere.com)';
+                }
+                Utils.showNotification('success', `Environment switched to ${envName}. Please restart B-Client for changes to take effect.`);
+            } else {
+                console.error('Failed to save environment configuration');
+                Utils.showNotification('error', 'Failed to save environment configuration');
+            }
+        } catch (error) {
+            console.error('Error saving environment configuration:', error);
+            Utils.showNotification('error', 'Error saving environment configuration');
+        }
+    }
+
+    function updateEnvironmentUI(env) {
+        const localBtn = document.getElementById('localEnv');
+        const productionBtn = document.getElementById('productionEnv');
+
+        // Remove active class from all buttons
+        localBtn.classList.remove('active');
+        productionBtn.classList.remove('active');
+
+        // Add active class to selected button
+        if (env === 'local') {
+            localBtn.classList.add('active');
+        } else {
+            productionBtn.classList.add('active');
+        }
+    }
+
+    document.getElementById('viewDatabase').addEventListener('click', () => {
+        window.open('/api/database/info', '_blank');
+    });
+
+    document.getElementById('closeConfig').addEventListener('click', () => {
+        window.close();
+    });
+
+
+
+    // Handle keyboard shortcuts
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            window.close();
+        }
+    });
+</script>
+{% endblock %}

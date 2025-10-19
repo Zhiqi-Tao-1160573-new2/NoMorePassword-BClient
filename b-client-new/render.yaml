@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: b-client
+    env: python
+    plan: free
+    rootDir: src/main/b-client-new
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    envVars:
+      - key: B_CLIENT_ENVIRONMENT
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 3000
+      - key: DEBUG
+        value: false
+      - key: NSN_PRODUCTION_URL
+        value: https://comp693nsnproject.pythonanywhere.com
+      - key: NSN_PRODUCTION_HOST
+        value: comp693nsnproject.pythonanywhere.com
+      - key: NSN_PRODUCTION_PORT
+        value: 443
+    healthCheckPath: /api/health
+    autoDeploy: false

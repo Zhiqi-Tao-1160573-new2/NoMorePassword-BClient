@@ -1,0 +1,52 @@
+{
+  "current_environment": "local",
+  "environments": {
+    "local": {
+      "name": "local",
+      "api": {
+        "nsn_url": "http://localhost:5000",
+        "nsn_host": "localhost",
+        "nsn_port": 5000
+      },
+      "websocket": {
+        "enabled": true,
+        "server_host": "127.0.0.1",
+        "server_port": 8766
+      }
+    },
+    "production": {
+      "name": "production",
+      "api": {
+        "nsn_url": "https://comp693nsnproject.pythonanywhere.com",
+        "nsn_host": "comp693nsnproject.pythonanywhere.com",
+        "nsn_port": 443
+      },
+      "websocket": {
+        "enabled": true,
+        "server_host": "127.0.0.1",
+        "server_port": 8766
+      }
+    }
+  },
+  "network": {
+    "use_public_ip": false,
+    "public_ip": "121.74.37.6",
+    "local_ip": "127.0.0.1"
+  },
+  "default": {
+    "autoRefreshIntervalMinutes": 30
+  },
+  "url_filtering": {
+    "enabled": true,
+    "allowed_domains": [
+      "comp693nsnproject.pythonanywhere.com",
+      "localhost:5000",
+      "127.0.0.1:5000"
+    ],
+    "allowed_patterns": [
+      "https://comp693nsnproject.pythonanywhere.com/*",
+      "http://localhost:5000/*",
+      "http://127.0.0.1:5000/*"
+    ]
+  }
+}

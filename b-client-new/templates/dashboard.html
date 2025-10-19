@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}B-Client Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="header">
+        <div class="header-content">
+            <div class="header-text">
+                <h1 class="title">B-Client Dashboard</h1>
+                <p class="subtitle">NoMorePassword Backend Service</p>
+            </div>
+            <div class="header-buttons">
+                <button class="config-button" id="configButton">
+                    <svg class="config-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                    </svg>
+                    Settings
+                </button>
+                <button class="config-button" id="nsnTestButton">
+                    <svg class="config-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z" />
+                    </svg>
+                    NSN Test
+                </button>
+                <button class="config-button" id="cClientTestButton">
+                    <svg class="config-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19M7,7H17V9H7V7M7,11H17V13H7V11M7,15H14V17H7V15Z" />
+                    </svg>
+                    C-Client Statics
+                </button>
+                <button class="config-button" id="nodeManagementButton">
+                    <svg class="config-icon" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+                        <path d="M2 17L12 22L22 17" />
+                        <path d="M2 12L12 17L22 12" />
+                    </svg>
+                    Node Management
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="website-info">
+        <div class="website-header">
+            <img class="website-icon" id="websiteIcon"
+                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iI0Y3RjNGNiIvPgo8cGF0aCBkPSJNMjQgMTJMMzYgMjRMMjQgMzZMMTIgMjRMMjQgMTJaIiBmaWxsPSIjNjY3RUVBIi8+Cjwvc3ZnPgo="
+                alt="Website Icon" />
+            <div class="website-title" id="websiteTitle">Loading...</div>
+        </div>
+        <a href="#" class="website-url" id="websiteUrl" target="_blank">Loading...</a>
+        <div class="refresh-info">
+            <div class="refresh-text" id="refreshInfo">Auto-refresh: Every 30 minutes</div>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" id="autoRefreshCount">-</div>
+            <div class="stat-label">Auto-Refresh Users</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-number" id="autoRegisterCount">-</div>
+            <div class="stat-label">Auto-Registered Users</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-number" id="totalCookiesCount">-</div>
+            <div class="stat-label">Total Cookies</div>
+        </div>
+    </div>
+
+    <div class="error" id="errorMessage" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        min-height: 80px;
+    }
+
+    .header-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .header-buttons {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 8px;
+        margin-left: 20px;
+        align-items: center;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+        min-width: 0;
+    }
+
+    .header-buttons .config-button {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        min-width: 120px;
+        max-width: 150px;
+        padding: 10px 12px;
+        font-size: 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-shrink: 0;
+        flex: 0 0 auto;
+        background: #6c757d;
+        color: white;
+    }
+
+    .header-buttons .config-button:first-child {
+        background: #6c757d !important;
+        color: white !important;
+    }
+
+    .header-buttons .config-button:first-child:hover {
+        background: #5a6268 !important;
+        transform: translateY(-1px);
+    }
+
+    .header-buttons .config-button:nth-child(2) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+        color: white !important;
+        box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+    }
+
+    .header-buttons .config-button:nth-child(2):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+    }
+
+    .header-buttons .config-button:nth-child(3) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .header-buttons .config-button:nth-child(3):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .header-buttons .config-button:nth-child(4) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        color: white !important;
+        box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
+    }
+
+    .header-buttons .config-button:nth-child(4):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            align-items: center;
+            min-height: auto;
+        }
+
+        .header-buttons {
+            margin-left: 0;
+            margin-top: 15px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .header-buttons .config-button {
+            min-width: 100px;
+            max-width: 140px;
+            flex: 1 1 auto;
+            font-size: 11px;
+            padding: 8px 10px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header-buttons {
+            flex-direction: column;
+            width: 100%;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .header-buttons .config-button {
+            width: 100%;
+            max-width: none;
+            min-width: auto;
+            flex: none;
+        }
+    }
+</style>
+<script>
+    class Dashboard {
+        constructor() {
+            this.apiBase = window.location.origin;
+            this.init();
+        }
+
+        async init() {
+            await this.loadDashboardData();
+            // Refresh data every 30 seconds
+            setInterval(() => this.loadDashboardData(), 30000);
+
+            // Listen for environment changes from config modal
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'bclient-environment') {
+                    this.loadDashboardData();
+                }
+            });
+        }
+
+        async loadDashboardData() {
+            try {
+                console.log('Loading dashboard data...');
+                const [stats, config, environment] = await Promise.all([
+                    this.fetchStats(),
+                    this.fetchConfig(),
+                    this.fetchEnvironment()
+                ]);
+
+                console.log('Dashboard data loaded:', { stats, config, environment });
+                this.updateWebsiteInfo(config, environment);
+                this.updateStats(stats);
+                this.hideError();
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                console.error('Error details:', error.message, error.stack);
+                this.showError('Failed to load dashboard data: ' + error.message);
+            }
+        }
+
+        async fetchStats() {
+            console.log('Fetching stats from:', `${this.apiBase}/api/stats`);
+            const response = await fetch(`${this.apiBase}/api/stats`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('Stats response:', data);
+            return data;
+        }
+
+        async fetchConfig() {
+            console.log('Fetching config from:', `${this.apiBase}/api/config`);
+            const response = await fetch(`${this.apiBase}/api/config`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('Config response:', data);
+            return data;
+        }
+
+        async fetchEnvironment() {
+            console.log('Fetching environment from:', `${this.apiBase}/api/config/environment`);
+            const response = await fetch(`${this.apiBase}/api/config/environment`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('Environment response:', data);
+            return data;
+        }
+
+        updateWebsiteInfo(config, environment) {
+            let website;
+            const currentEnv = environment.environment || 'local';
+
+            // Use the API configuration directly
+            if (config.api && config.api.nsn_url) {
+                const nsnUrl = config.api.nsn_url;
+                const currentEnv = environment.environment || 'local';
+
+                // Create website object from API configuration
+                website = {
+                    name: `NSN ${currentEnv.charAt(0).toUpperCase() + currentEnv.slice(1)} Environment`,
+                    homeUrl: nsnUrl,
+                    realTitle: `NSN ${currentEnv.charAt(0).toUpperCase() + currentEnv.slice(1)} Server`
+                };
+            }
+
+            if (website) {
+                const title = website.realTitle || website.name;
+                document.getElementById('websiteTitle').textContent = title;
+                document.getElementById('websiteUrl').textContent = website.homeUrl;
+                document.getElementById('websiteUrl').href = website.homeUrl;
+
+                this.updateWebsiteIcon(website.images);
+            }
+
+            const interval = config.default?.autoRefreshIntervalMinutes || 30;
+            document.getElementById('refreshInfo').textContent = `Auto-refresh: Every ${interval} minutes (${currentEnv} environment)`;
+        }
+
+        updateWebsiteIcon(images) {
+            const iconElement = document.getElementById('websiteIcon');
+            if (!images) return;
+
+            let iconUrl = null;
+            if (images.favicon) {
+                iconUrl = images.favicon;
+            } else if (images.logo) {
+                iconUrl = images.logo;
+            } else if (images.ogImage) {
+                iconUrl = images.ogImage;
+            }
+
+            if (iconUrl) {
+                iconElement.src = iconUrl;
+                iconElement.alt = 'Website Icon';
+                iconElement.onerror = () => {
+                    iconElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgZmlsbD0iI0Y3RjNGNiIvPgo8cGF0aCBkPSJNMjQgMTJMMzYgMjRMMjQgMzZMMTIgMjRMMjQgMTJaIiBmaWxsPSIjNjY3RUVBIi8+Cjwvc3ZnPgo=';
+                };
+            }
+        }
+
+        updateStats(stats) {
+            document.getElementById('autoRefreshCount').textContent = stats.autoRefreshUsers || 0;
+            document.getElementById('autoRegisterCount').textContent = stats.autoRegisteredUsers || 0;
+            document.getElementById('totalCookiesCount').textContent = stats.totalCookies || 0;
+        }
+
+        showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+    }
+
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        const dashboard = new Dashboard();
+
+        // Debug: Check if all buttons exist
+        console.log('🔍 Dashboard: Checking buttons...');
+        console.log('Config button:', document.getElementById('configButton'));
+        console.log('NSN Test button:', document.getElementById('nsnTestButton'));
+        console.log('C-Client Test button:', document.getElementById('cClientTestButton'));
+
+        // Add config button event listener
+        const configBtn = document.getElementById('configButton');
+        if (configBtn) {
+            configBtn.addEventListener('click', () => {
+                window.open('/config', '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
+            });
+            console.log('✅ Config button event listener added');
+        } else {
+            console.error('❌ Config button not found');
+        }
+
+        // Add NSN test button event listener
+        const nsnBtn = document.getElementById('nsnTestButton');
+        if (nsnBtn) {
+            nsnBtn.addEventListener('click', () => {
+                window.open('/nsn-test', '_blank', 'width=800,height=700,scrollbars=yes,resizable=yes');
+            });
+            console.log('✅ NSN Test button event listener added');
+        } else {
+            console.error('❌ NSN Test button not found');
+        }
+
+        // Add C-Client test button event listener
+        const cClientBtn = document.getElementById('cClientTestButton');
+        if (cClientBtn) {
+            cClientBtn.addEventListener('click', () => {
+                window.open('/c-client-test', '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
+            });
+            console.log('✅ C-Client Test button event listener added');
+        } else {
+            console.error('❌ C-Client Test button not found');
+        }
+
+        // Add Node Management button event listener
+        const nodeManagementBtn = document.getElementById('nodeManagementButton');
+        if (nodeManagementBtn) {
+            nodeManagementBtn.addEventListener('click', () => {
+                window.open('/node-management', '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes');
+            });
+            console.log('✅ Node Management button event listener added');
+        } else {
+            console.error('❌ Node Management button not found');
+        }
+    });
+</script>
+{% endblock %}

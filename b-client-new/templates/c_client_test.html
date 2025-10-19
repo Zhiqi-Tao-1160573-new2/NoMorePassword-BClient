@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Client WebSocket Test</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        .test-button:hover {
+            background: #0056b3;
+        }
+
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background: #28a745;
+        }
+
+        .status-disconnected {
+            background: #dc3545;
+        }
+
+        .response-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .info {
+            color: #17a2b8;
+        }
+
+        .connection-monitor {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .connection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .connection-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .connection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .connection-details {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .connection-details div {
+            margin: 3px 0;
+        }
+
+        .refresh-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .refresh-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .server-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .no-connections {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.7;
+        }
+
+        .connection-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-container">
+        <h1>🔌 C-Client WebSocket Test</h1>
+        <p>Test WebSocket communication between B-Client and C-Client</p>
+
+        <!-- Real-time Connection Monitor -->
+        <div class="connection-monitor">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: white;">🌐 Real-time Connection Monitor</h3>
+                <button class="refresh-button" onclick="refreshConnections()">🔄 Refresh</button>
+            </div>
+
+            <div class="server-info">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>B-Client WebSocket Server</strong>
+                        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">
+                            <span id="serverHost">Loading...</span>:<span id="serverPort">Loading...</span>
+                        </div>
+                    </div>
+                    <div class="connection-status">
+                        <div class="pulse-dot" id="serverStatusDot"></div>
+                        <span id="serverStatus">Checking...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="connection-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalConnections">0</div>
+                    <div class="stat-label">Total Connections</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="activeConnections">0</div>
+                    <div class="stat-label">Active Clients</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="lastUpdate">--</div>
+                    <div class="stat-label">Last Update</div>
+                </div>
+            </div>
+
+            <div class="connection-grid" id="connectionGrid">
+                <div class="no-connections">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
+                    <div>No C-Client connections detected</div>
+                    <div style="font-size: 12px; margin-top: 5px;">Start C-Client to see connections here</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="test-section">
+            <h3>Connection Status</h3>
+            <div id="connectionStatus">
+                <span class="status-indicator status-disconnected"></span>
+                <span>Checking connection...</span>
+            </div>
+            <button class="test-button" onclick="checkConnection()">Check Connection</button>
+        </div>
+
+        <!-- Cookie Operations -->
+        <div class="test-section">
+            <h3>Cookie Operations</h3>
+
+            <div class="form-group">
+                <label for="userId">User ID:</label>
+                <input type="text" id="userId" value="test-user-123" placeholder="Enter user ID">
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="testuser" placeholder="Enter username">
+            </div>
+
+            <div class="form-group">
+                <label for="cookie">Cookie Data:</label>
+                <textarea id="cookie" placeholder="Enter cookie data">session_id=abc123; user_token=xyz789</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="autoRefresh"> Auto Refresh
+                </label>
+            </div>
+
+            <button class="test-button" onclick="updateCookie()">Update Cookie</button>
+        </div>
+
+        <!-- User Session Operations -->
+        <div class="test-section">
+            <h3>User Session Operations</h3>
+
+            <div class="form-group">
+                <label for="sessionData">Session Data (JSON):</label>
+                <textarea id="sessionData"
+                    placeholder='{"login_time": "2024-01-01T00:00:00Z", "ip": "127.0.0.1"}'>{}</textarea>
+            </div>
+
+            <button class="test-button" onclick="notifyLogin()">Notify Login</button>
+            <button class="test-button" onclick="notifyLogout()">Notify Logout</button>
+            <button class="test-button" onclick="syncSession()">Sync Session</button>
+        </div>
+
+        <!-- Response Area -->
+        <div class="test-section">
+            <h3>Response Log</h3>
+            <div id="responseLog" class="response-area">
+                <div class="info">Ready to test C-Client WebSocket communication...</div>
+            </div>
+            <button class="test-button" onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        // Check connection status
+        async function checkConnection() {
+            try {
+                const response = await fetch('/api/c-client/status');
+                const data = await response.json();
+
+                const statusElement = document.getElementById('connectionStatus');
+                const indicator = statusElement.querySelector('.status-indicator');
+                const text = statusElement.querySelector('span:last-child');
+
+                if (data.success && data.connected) {
+                    indicator.className = 'status-indicator status-connected';
+                    text.textContent = `Connected (Client ID: ${data.client_id})`;
+                    text.className = 'success';
+                } else {
+                    indicator.className = 'status-indicator status-disconnected';
+                    text.textContent = 'Disconnected';
+                    text.className = 'error';
+                }
+
+                logResponse('Connection Status', data);
+            } catch (error) {
+                logResponse('Connection Error', { error: error.message }, 'error');
+            }
+        }
+
+
+        // Update cookie in C-Client
+        async function updateCookie() {
+            const userId = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+            const cookie = document.getElementById('cookie').value;
+            const autoRefresh = document.getElementById('autoRefresh').checked;
+
+            if (!userId || !username || !cookie) {
+                alert('Please enter User ID, Username, and Cookie');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/c-client/update-cookie', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        username: username,
+                        cookie: cookie,
+                        auto_refresh: autoRefresh
+                    })
+                });
+
+                const data = await response.json();
+                logResponse('Update Cookie', data);
+            } catch (error) {
+                logResponse('Update Cookie Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Notify user login
+        async function notifyLogin() {
+            const userId = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+            const sessionData = document.getElementById('sessionData').value;
+
+            if (!userId || !username) {
+                alert('Please enter User ID and Username');
+                return;
+            }
+
+            try {
+                let sessionDataObj = {};
+                if (sessionData.trim()) {
+                    sessionDataObj = JSON.parse(sessionData);
+                }
+
+                const response = await fetch('/api/c-client/notify-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        username: username,
+                        session_data: sessionDataObj
+                    })
+                });
+
+                const data = await response.json();
+                logResponse('Notify Login', data);
+            } catch (error) {
+                logResponse('Notify Login Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Notify user logout
+        async function notifyLogout() {
+            const userId = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+
+            if (!userId || !username) {
+                alert('Please enter User ID and Username');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/c-client/notify-logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: userId, username: username })
+                });
+
+                const data = await response.json();
+                logResponse('Notify Logout', data);
+            } catch (error) {
+                logResponse('Notify Logout Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Sync session data
+        async function syncSession() {
+            const userId = document.getElementById('userId').value;
+            const sessionData = document.getElementById('sessionData').value;
+
+            if (!userId) {
+                alert('Please enter User ID');
+                return;
+            }
+
+            try {
+                let sessionDataObj = {};
+                if (sessionData.trim()) {
+                    sessionDataObj = JSON.parse(sessionData);
+                }
+
+                const response = await fetch('/api/c-client/sync-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        session_data: sessionDataObj
+                    })
+                });
+
+                const data = await response.json();
+                logResponse('Sync Session', data);
+            } catch (error) {
+                logResponse('Sync Session Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Log response to the response area
+        function logResponse(operation, data, type = 'info') {
+            const logElement = document.getElementById('responseLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+
+            const logEntry = document.createElement('div');
+            logEntry.className = className;
+            logEntry.innerHTML = `
+                <strong>[${timestamp}] ${operation}:</strong><br>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+
+            logElement.appendChild(logEntry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Clear log
+        function clearLog() {
+            document.getElementById('responseLog').innerHTML = '<div class="info">Log cleared...</div>';
+        }
+
+        // Connection monitoring functions
+        let monitoringInterval = null;
+
+        async function refreshConnections() {
+            try {
+                const response = await fetch('/api/c-client/status');
+                const data = await response.json();
+
+                if (data.success) {
+                    updateConnectionMonitor(data);
+                } else {
+                    console.error('Failed to get connection status:', data.error);
+                }
+            } catch (error) {
+                console.error('Error refreshing connections:', error);
+            }
+        }
+
+        function updateConnectionMonitor(data) {
+            // Update server info
+            const serverInfo = data.websocket_server;
+            document.getElementById('serverHost').textContent = serverInfo.host;
+            document.getElementById('serverPort').textContent = serverInfo.port;
+
+            // Update server status
+            const serverStatusDot = document.getElementById('serverStatusDot');
+            const serverStatus = document.getElementById('serverStatus');
+
+            if (serverInfo.status === 'running') {
+                serverStatusDot.style.background = '#4ade80';
+                serverStatus.textContent = 'Running';
+            } else {
+                serverStatusDot.style.background = '#ef4444';
+                serverStatus.textContent = 'Stopped';
+            }
+
+            // Update connection stats with new triple pool structure
+            const connectedClients = data.connected_clients;
+            const summary = connectedClients.summary || {};
+
+            // Update stats display
+            document.getElementById('totalConnections').textContent = summary.total_connections || 0;
+            document.getElementById('activeConnections').textContent = summary.total_clients || 0;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+            // Update connection grid with node and user information
+            const connectionGrid = document.getElementById('connectionGrid');
+
+            if (summary.total_connections === 0) {
+                connectionGrid.innerHTML = `
+                    <div class="no-connections">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🔍</div>
+                        <div>No C-Client connections detected</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Start C-Client to see connections here</div>
+                    </div>
+                `;
+            } else {
+                // Display node connections
+                const nodeConnections = connectedClients.node_connections_info || [];
+                const userConnections = connectedClients.user_connections || {};
+
+                let html = `
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #2563eb; margin-bottom: 10px;">📊 Connection Summary</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
+                            <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #2563eb;">${summary.total_clients || 0}</div>
+                                <div style="font-size: 12px; color: #64748b;">Active Clients</div>
+                            </div>
+                            <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #16a34a;">${summary.total_users || 0}</div>
+                                <div style="font-size: 12px; color: #64748b;">Active Users</div>
+                            </div>
+                            <div style="background: #fef3c7; padding: 10px; border-radius: 6px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #d97706;">${summary.total_connections || 0}</div>
+                                <div style="font-size: 12px; color: #64748b;">Total Connections</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Display client connections
+                const clientConnections = connectedClients.client_connections || {};
+                if (Object.keys(clientConnections).length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #2563eb; margin-bottom: 10px;">🔌 Client Connections (${Object.keys(clientConnections).length})</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                                ${Object.entries(clientConnections).map(([clientId, clientInfo]) => `
+                                    <div class="connection-card">
+                                        <div class="connection-header">
+                                            <div class="connection-status">
+                                                <div class="pulse-dot"></div>
+                                                <span>Client Active</span>
+                                            </div>
+                                            <div style="font-size: 12px; opacity: 0.7;">
+                                                ${clientInfo.connection_count} connection${clientInfo.connection_count > 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+                                        <div class="connection-details">
+                                            <div><strong>Client ID:</strong> ${clientId}</div>
+                                            <div><strong>Users:</strong> ${(clientInfo.users || []).join(', ') || 'N/A'}</div>
+                                            <div><strong>Nodes:</strong> ${(clientInfo.nodes || []).join(', ') || 'N/A'}</div>
+                                            <div><strong>Usernames:</strong> ${(clientInfo.usernames || []).join(', ') || 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Display user connections (users on multiple nodes)
+                if (Object.keys(userConnections).length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #16a34a; margin-bottom: 10px;">👥 User Connections (${Object.keys(userConnections).length})</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                                ${Object.entries(userConnections).map(([userId, userInfo]) => `
+                                    <div class="connection-card" style="border-left: 4px solid #16a34a;">
+                                        <div class="connection-header">
+                                            <div class="connection-status">
+                                                <div class="pulse-dot" style="background: #16a34a;"></div>
+                                                <span>User Active</span>
+                                            </div>
+                                            <div style="font-size: 12px; opacity: 0.7;">
+                                                ${userInfo.connection_count} connection${userInfo.connection_count > 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+                                        <div class="connection-details">
+                                            <div><strong>User ID:</strong> ${userId}</div>
+                                            <div><strong>Username:</strong> ${userInfo.usernames[0] || 'N/A'}</div>
+                                            <div><strong>Active Nodes:</strong> ${userInfo.nodes.filter(n => n).join(', ') || 'N/A'}</div>
+                                            <div><strong>Connection Count:</strong> ${userInfo.connection_count}</div>
+                                            ${userInfo.connection_count > 1 ? '<div style="color: #16a34a; font-size: 12px; margin-top: 5px;">🌐 Multi-node user</div>' : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                connectionGrid.innerHTML = html;
+            }
+        }
+
+        function startMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+            }
+
+            // Initial refresh
+            refreshConnections();
+
+            // Set up auto-refresh every 3 seconds
+            monitoringInterval = setInterval(refreshConnections, 3000);
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+        }
+
+        // Auto-check connection on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            startMonitoring();
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopMonitoring();
+        });
+    </script>
+</body>
+
+</html>
