@@ -66,7 +66,7 @@ try:
             await self.flask_app(scope, receive, send)
         
         async def handle_websocket_connection(self, scope, receive, send):
-            """Handle WebSocket connections"""
+            """Handle WebSocket connections using the real C-Client handler"""
             try:
                 # Accept WebSocket connection
                 await send({
@@ -76,32 +76,49 @@ try:
                 print(f"✅ [ASGI] WebSocket connection accepted")
                 logger.info("WebSocket connection accepted")
                 
-                # Handle WebSocket messages
-                while True:
-                    message = await receive()
-                    if message["type"] == "websocket.receive":
-                        # Process WebSocket message
-                        print(f"📨 [ASGI] Received WebSocket message")
-                        logger.info("Received WebSocket message")
-                        
-                        # Echo back the message (for testing)
-                        await send({
-                            "type": "websocket.send",
-                            "text": f"Echo: {message.get('text', '')}"
-                        })
-                    elif message["type"] == "websocket.disconnect":
-                        print(f"🔚 [ASGI] WebSocket disconnected")
-                        logger.info("WebSocket disconnected")
-                        break
+                # Import and initialize the real WebSocket client
+                from services.websocket_client import c_client_ws
+                
+                # Create a mock websocket object that implements the websockets interface
+                class MockWebSocket:
+                    def __init__(self, send_func, receive_func):
+                        self.send_func = send_func
+                        self.receive_func = receive_func
+                        self.closed = False
+                    
+                    async def send(self, message):
+                        if not self.closed:
+                            await self.send_func({
+                                "type": "websocket.send",
+                                "text": message
+                            })
+                    
+                    async def recv(self):
+                        while True:
+                            message = await self.receive_func()
+                            if message["type"] == "websocket.receive":
+                                return message.get("text", "")
+                            elif message["type"] == "websocket.disconnect":
+                                self.closed = True
+                                raise websockets.exceptions.ConnectionClosed(None, None)
+                
+                # Create mock websocket and handle connection
+                mock_websocket = MockWebSocket(send, receive)
+                await c_client_ws.handle_c_client_connection(mock_websocket)
                         
             except Exception as e:
                 print(f"❌ [ASGI] WebSocket error: {e}")
                 logger.error(f"WebSocket error: {e}")
-                await send({
-                    "type": "websocket.close",
-                    "code": 1011,
-                    "reason": "Internal server error"
-                })
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                try:
+                    await send({
+                        "type": "websocket.close",
+                        "code": 1011,
+                        "reason": "Internal server error"
+                    })
+                except:
+                    pass
     
     asgi_app = ASGIAppWithWebSocket(flask_asgi)
     print(f"✅ [ASGI] ASGI app wrapper created successfully")
