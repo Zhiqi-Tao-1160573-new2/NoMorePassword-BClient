@@ -695,7 +695,6 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
             # Get user info from NSN using the session cookie we just obtained
             try:
                 # Use NSN's current-user API endpoint with the session cookie from login
-                from utils.config_manager import get_nsn_api_url
                 nsn_current_user_url = get_nsn_api_url('session_data')
                 current_user_data = {
                     'session_cookie': session_cookie
