@@ -78,12 +78,19 @@ try:
                 
                 # Import and initialize the real WebSocket client
                 try:
-                    from services.websocket_client import c_client_ws
-                    print(f"✅ [ASGI] Successfully imported c_client_ws: {c_client_ws}")
-                    logger.info(f"Successfully imported c_client_ws: {c_client_ws}")
+                    # Import the class and create instance
+                    from services.websocket_client import CClientWebSocketClient
+                    print(f"✅ [ASGI] Successfully imported CClientWebSocketClient class")
+                    logger.info("Successfully imported CClientWebSocketClient class")
+                    
+                    # Create instance
+                    c_client_ws = CClientWebSocketClient()
+                    print(f"✅ [ASGI] Successfully created c_client_ws instance: {c_client_ws}")
+                    logger.info(f"Successfully created c_client_ws instance: {c_client_ws}")
+                    
                 except Exception as import_error:
-                    print(f"❌ [ASGI] Failed to import c_client_ws: {import_error}")
-                    logger.error(f"Failed to import c_client_ws: {import_error}")
+                    print(f"❌ [ASGI] Failed to import/create c_client_ws: {import_error}")
+                    logger.error(f"Failed to import/create c_client_ws: {import_error}")
                     raise
                 
                 # Create a mock websocket object that implements the websockets interface
