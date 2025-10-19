@@ -88,6 +88,8 @@ try:
             await self.flask_app(scope, receive, send)
     
     asgi_app = ASGIAppWithWebSocket(flask_asgi)
+    print(f"✅ [ASGI] ASGI app wrapper created successfully")
+    logger.info("✅ ASGI app wrapper created successfully")
     
 except ImportError:
     logger.warning("⚠️ asgiref not available, using basic ASGI wrapper")
@@ -130,6 +132,8 @@ except ImportError:
             })
     
     asgi_app = BasicASGIWrapper(app)
+    print(f"⚠️ [ASGI] Using BasicASGIWrapper (limited functionality)")
+    logger.warning("⚠️ Using BasicASGIWrapper (limited functionality)")
 
 # Start WebSocket server in background
 async def startup():
