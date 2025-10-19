@@ -66,9 +66,28 @@ try:
     from asgiref.wsgi import WsgiToAsgi
     
     # Convert Flask WSGI app to ASGI
-    asgi_app = WsgiToAsgi(app)
+    flask_asgi = WsgiToAsgi(app)
     
     logger.info("✅ Using asgiref.wsgi.WsgiToAsgi for Flask ASGI conversion")
+    
+    # Wrap with WebSocket server startup
+    class ASGIAppWithWebSocket:
+        def __init__(self, flask_app):
+            self.flask_app = flask_app
+            self.websocket_started = False
+        
+        async def __call__(self, scope, receive, send):
+            # Start WebSocket server on first request
+            if not self.websocket_started:
+                print(f"🚀 [ASGI] Starting WebSocket server on first request...")
+                logger.info("🚀 Starting WebSocket server on first request...")
+                await startup()
+                self.websocket_started = True
+            
+            # Handle the request with Flask
+            await self.flask_app(scope, receive, send)
+    
+    asgi_app = ASGIAppWithWebSocket(flask_asgi)
     
 except ImportError:
     logger.warning("⚠️ asgiref not available, using basic ASGI wrapper")
@@ -77,8 +96,16 @@ except ImportError:
     class BasicASGIWrapper:
         def __init__(self, wsgi_app):
             self.wsgi_app = wsgi_app
+            self.websocket_started = False
         
         async def __call__(self, scope, receive, send):
+            # Start WebSocket server on first request
+            if not self.websocket_started:
+                print(f"🚀 [ASGI] Starting WebSocket server on first request...")
+                logger.info("🚀 Starting WebSocket server on first request...")
+                await startup()
+                self.websocket_started = True
+            
             if scope["type"] != "http":
                 await send({
                     "type": "http.response.start",
@@ -99,7 +126,7 @@ except ImportError:
             })
             await send({
                 "type": "http.response.body",
-                "body": b"<h1>B-Client</h1><p>WebSocket server running separately on port " + str(int(os.environ.get('PORT', 8000)) + 1).encode() + b"</p>",
+                "body": b"<h1>B-Client</h1><p>WebSocket server running separately on port " + str(int(os.environ.get('PORT', 8000))).encode() + b"</p>",
             })
     
     asgi_app = BasicASGIWrapper(app)
@@ -115,19 +142,9 @@ async def startup():
         print(f"✅ [ASGI] WebSocket server task created: {websocket_task}")
         logger.info("🚀 WebSocket server task created")
 
-# Initialize WebSocket server on module import
-try:
-    print(f"🔧 [ASGI] Initializing WebSocket server on module import...")
-    # Create event loop and start WebSocket server
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    print(f"🔄 [ASGI] Creating startup task...")
-    loop.create_task(startup())
-    print(f"✅ [ASGI] WebSocket server startup scheduled")
-    logger.info("🚀 WebSocket server startup scheduled")
-except Exception as e:
-    print(f"❌ [ASGI] Failed to schedule WebSocket server startup: {e}")
-    logger.error(f"❌ Failed to schedule WebSocket server startup: {e}")
+# WebSocket server will be started when Hypercorn calls the ASGI app
+print(f"🔧 [ASGI] ASGI app created, WebSocket server will start with Hypercorn")
+logger.info("🔧 ASGI app created, WebSocket server will start with Hypercorn")
 
 # For Hypercorn deployment
 def get_asgi_app():
