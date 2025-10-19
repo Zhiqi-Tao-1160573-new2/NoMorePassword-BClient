@@ -718,8 +718,17 @@ class CClientWebSocketClient:
             print(f"🔧 [WebSocket] Starting WebSocket server on {host}:{port}")
             self.logger.info(f"Starting WebSocket server on {host}:{port}")
             
-            # Configure WebSocket server with better error handling
+            # Check if websockets is available
+            if websockets is None:
+                error_msg = "websockets library not available"
+                print(f"❌ [WebSocket] {error_msg}")
+                self.logger.error(f"{error_msg}")
+                return None
+            
+            print(f"🔧 [WebSocket] websockets library available: {websockets.__version__}")
             print(f"🔧 [WebSocket] Calling websockets.serve()...")
+            
+            # Configure WebSocket server with better error handling
             server = await websockets.serve(
                 self.handle_c_client_connection, 
                 host, 
@@ -742,7 +751,7 @@ class CClientWebSocketClient:
         except Exception as e:
             print(f"❌ [WebSocket] Failed to start WebSocket server: {e}")
             self.logger.error(f"Failed to start WebSocket server: {e}")
-            import traceback
+            print(f"❌ [WebSocket] Exception type: {type(e).__name__}")
             print(f"❌ [WebSocket] Traceback: {traceback.format_exc()}")
             return None
     
