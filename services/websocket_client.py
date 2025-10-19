@@ -728,6 +728,9 @@ class CClientWebSocketClient:
             print(f"🔧 [WebSocket] websockets library available: {websockets.__version__}")
             print(f"🔧 [WebSocket] Calling websockets.serve()...")
             
+            # Test if we can create a simple server
+            print(f"🔧 [WebSocket] Testing websockets.serve() call...")
+            
             # Configure WebSocket server with better error handling
             server = await websockets.serve(
                 self.handle_c_client_connection, 
