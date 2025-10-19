@@ -36,8 +36,8 @@
       },
       "websocket": {
         "enabled": true,
-        "server_host": "nomorepassword-bclient.herokuapp.com",
-        "server_port": 443
+        "server_host": "0.0.0.0",
+        "server_port": 8766
       },
       "b_client_url": "https://nomorepassword-62a80fa63184.herokuapp.com"
     }
