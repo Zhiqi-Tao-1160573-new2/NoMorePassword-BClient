@@ -30,29 +30,39 @@ async def start_websocket_server_background():
     global websocket_server
     
     try:
-        # Get port (use same port for both HTTP and WebSocket in Heroku)
+        # Get port (try different ports if main port is occupied)
         port = int(os.environ.get('PORT', 8000))
-        ws_port = port  # Use same port for WebSocket in Heroku
         
-        print(f"🚀 [ASGI] Starting WebSocket server on port {ws_port}")
-        logger.info(f"Starting WebSocket server on port {ws_port}")
+        # Try different ports for WebSocket server
+        for port_offset in range(5):  # Try up to 5 different ports
+            ws_port = port + port_offset
+            print(f"🚀 [ASGI] Attempting to start WebSocket server on port {ws_port}")
+            logger.info(f"Attempting to start WebSocket server on port {ws_port}")
+            
+            # Start WebSocket server
+            print(f"🔧 [ASGI] Calling c_client_ws.start_server(host='0.0.0.0', port={ws_port})")
+            websocket_server = await c_client_ws.start_server(host='0.0.0.0', port=ws_port)
+            
+            if websocket_server is not None:
+                print(f"✅ [ASGI] WebSocket server started successfully on port {ws_port}")
+                logger.info(f"✅ WebSocket server started successfully on port {ws_port}")
+                break
+            else:
+                print(f"❌ [ASGI] Failed to start WebSocket server on port {ws_port}, trying next port...")
+                logger.warning(f"Failed to start WebSocket server on port {ws_port}, trying next port...")
+                continue
         
-        # Start WebSocket server
-        print(f"🔧 [ASGI] Calling c_client_ws.start_server(host='0.0.0.0', port={ws_port})")
-        websocket_server = await c_client_ws.start_server(host='0.0.0.0', port=ws_port)
         print(f"📦 [ASGI] WebSocket server object created: {websocket_server}")
         logger.info(f"WebSocket server object created: {websocket_server}")
         
         if websocket_server:
-            print(f"✅ [ASGI] WebSocket server started successfully on port {ws_port}")
-            logger.info(f"✅ WebSocket server started successfully on port {ws_port}")
             print(f"🔄 [ASGI] Waiting for WebSocket server to close...")
             # Keep server running
             await websocket_server.wait_closed()
             print(f"🔚 [ASGI] WebSocket server closed")
         else:
-            print(f"❌ [ASGI] Failed to start WebSocket server")
-            logger.error("❌ Failed to start WebSocket server")
+            print(f"❌ [ASGI] Failed to start WebSocket server on any port")
+            logger.error("❌ Failed to start WebSocket server on any port")
             
     except Exception as e:
         print(f"❌ [ASGI] WebSocket server error: {e}")
