@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ASGI Application for B-Client
-Combines Flask HTTP routes with WebSocket server using Hypercorn
+Uses the real WebSocket service from app.py instead of creating adapters
 """
 
 # Standard library imports
@@ -12,8 +12,7 @@ import time
 import traceback
 
 # Third-party imports
-from hypercorn.asyncio import serve
-from hypercorn.config import Config
+from asgiref.wsgi import WsgiToAsgi
 
 # Local imports
 from app import app, c_client_ws
@@ -22,307 +21,120 @@ from utils.logger import get_bclient_logger
 # Initialize logger
 logger = get_bclient_logger('asgi_app')
 
-# Global variables for WebSocket server
-websocket_server = None
-websocket_task = None
+# Exception for WebSocket connection closed
+class ConnectionClosed(Exception):
+    pass
 
-async def start_websocket_server_background():
-    """No longer needed - WebSocket handling integrated into ASGI app"""
-    global websocket_server
-    
-    print(f"ℹ️ [ASGI] No separate WebSocket server needed - integrated into ASGI app")
-    logger.info("No separate WebSocket server needed - integrated into ASGI app")
-    
-    # No separate WebSocket server
-    websocket_server = None
-    return None
+# Convert Flask WSGI app to ASGI
+flask_asgi = WsgiToAsgi(app)
 
-# Create ASGI application using Flask with WSGI-to-ASGI adapter
-try:
-    # Try to import WSGI-to-ASGI adapter
-    from asgiref.wsgi import WsgiToAsgi
+logger.info("✅ Using asgiref.wsgi.WsgiToAsgi for Flask ASGI conversion")
+
+class ASGIAppWithWebSocket:
+    def __init__(self, flask_app):
+        self.flask_app = flask_app
+        self.websocket_started = False
     
-    # Convert Flask WSGI app to ASGI
-    flask_asgi = WsgiToAsgi(app)
-    
-    logger.info("✅ Using asgiref.wsgi.WsgiToAsgi for Flask ASGI conversion")
-    
-    # Wrap with WebSocket server startup
-    class ASGIAppWithWebSocket:
-        def __init__(self, flask_app):
-            self.flask_app = flask_app
-            self.websocket_started = False
-        
-        async def __call__(self, scope, receive, send):
-            # Handle WebSocket connections directly in ASGI
-            if scope["type"] == "websocket":
-                print(f"🔧 [ASGI] Handling WebSocket connection directly")
-                logger.info("Handling WebSocket connection directly")
-                
-                # Handle WebSocket connection using our WebSocket client
-                await self.handle_websocket_connection(scope, receive, send)
-                return
+    async def __call__(self, scope, receive, send):
+        # Handle WebSocket connections using the real WebSocket service
+        if scope["type"] == "websocket":
+            print(f"🔧 [ASGI] Handling WebSocket connection using real service")
+            logger.info("Handling WebSocket connection using real service")
             
-            # Handle HTTP requests with Flask
-            await self.flask_app(scope, receive, send)
+            await self.handle_websocket_connection(scope, receive, send)
+            return
         
-        async def handle_websocket_connection(self, scope, receive, send):
-            """Handle WebSocket connections directly using ASGI interface"""
+        # Handle HTTP requests with Flask
+        await self.flask_app(scope, receive, send)
+    
+    async def handle_websocket_connection(self, scope, receive, send):
+        """Handle WebSocket connections using the real WebSocket service from app.py"""
+        try:
+            # Accept WebSocket connection
+            await send({
+                "type": "websocket.accept",
+            })
+            
+            # Extract client information from ASGI scope
+            client_host = scope.get("client", ["unknown"])[0] if scope.get("client") else "unknown"
+            client_port = scope.get("client", [0, 0])[1] if scope.get("client") else 0
+            server_host = scope.get("server", ["unknown"])[0] if scope.get("server") else "unknown"
+            server_port = scope.get("server", [0, 0])[1] if scope.get("server") else 0
+            path = scope.get("path", "/ws")
+            
+            print(f"✅ [ASGI] WebSocket connection accepted from {client_host}:{client_port}")
+            logger.info(f"WebSocket connection accepted from {client_host}:{client_port}")
+            print(f"🔧 [ASGI] Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
+            logger.info(f"Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
+            
+            # Use the real WebSocket service from app.py
+            print(f"🔧 [ASGI] Using real WebSocket service from app.py...")
+            logger.info("Using real WebSocket service from app.py")
+            
+            # Create an ASGI-compatible WebSocket adapter that works with the real service
+            class ASGIWebSocketAdapter:
+                def __init__(self, send_func, receive_func):
+                    self.send_func = send_func
+                    self.receive_func = receive_func
+                    self.remote_address = (client_host, client_port)
+                    self.local_address = (server_host, server_port)
+                    self.path = path
+                    self._closed = False
+                
+                async def send(self, message):
+                    await self.send_func({
+                        "type": "websocket.send",
+                        "text": message
+                    })
+                
+                async def recv(self):
+                    while True:
+                        message = await self.receive_func()
+                        if message["type"] == "websocket.receive":
+                            return message.get("text", "")
+                        elif message["type"] == "websocket.disconnect":
+                            self._closed = True
+                            raise ConnectionClosed()
+                
+                def close(self):
+                    self._closed = True
+                
+                @property
+                def closed(self):
+                    return self._closed
+            
+            # Create the adapter and use it with the real WebSocket service
+            websocket_adapter = ASGIWebSocketAdapter(send, receive)
+            
+            # Use the real WebSocket service from app.py
+            print(f"🔧 [ASGI] Calling real WebSocket service...")
+            logger.info("Calling real WebSocket service")
+            
+            # Call the real WebSocket service handler
+            await c_client_ws.handle_c_client_connection(websocket_adapter)
+            
+            print(f"✅ [ASGI] Real WebSocket service completed")
+            logger.info("Real WebSocket service completed")
+                    
+        except Exception as e:
+            print(f"❌ [ASGI] WebSocket error: {e}")
+            logger.error(f"WebSocket error: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             try:
-                # Accept WebSocket connection
                 await send({
-                    "type": "websocket.accept",
+                    "type": "websocket.close",
+                    "code": 1011,
+                    "reason": "Internal server error"
                 })
-                
-                # Extract client information from ASGI scope
-                client_host = scope.get("client", ["unknown"])[0] if scope.get("client") else "unknown"
-                client_port = scope.get("client", [0, 0])[1] if scope.get("client") else 0
-                server_host = scope.get("server", ["unknown"])[0] if scope.get("server") else "unknown"
-                server_port = scope.get("server", [0, 0])[1] if scope.get("server") else 0
-                path = scope.get("path", "/ws")
-                
-                print(f"✅ [ASGI] WebSocket connection accepted from {client_host}:{client_port}")
-                logger.info(f"WebSocket connection accepted from {client_host}:{client_port}")
-                print(f"🔧 [ASGI] Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
-                logger.info(f"Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
-                
-                # Handle WebSocket messages directly using ASGI interface
-                print(f"🔧 [ASGI] Starting WebSocket message loop...")
-                logger.info("Starting WebSocket message loop")
-                
-                while True:
-                    message = await receive()
-                    
-                    if message["type"] == "websocket.receive":
-                        # Process incoming message
-                        text_data = message.get("text", "")
-                        print(f"📨 [ASGI] Received WebSocket message: {text_data[:100]}...")
-                        logger.info(f"Received WebSocket message: {text_data[:100]}...")
-                        
-                        try:
-                            # Parse JSON message
-                            import json
-                            data = json.loads(text_data)
-                            
-                            # Handle registration message
-                            if data.get("type") == "c_client_register":
-                                print(f"🔧 [ASGI] Processing C-Client registration...")
-                                logger.info("Processing C-Client registration")
-                                
-                                # Import and use the real registration logic
-                                try:
-                                    # Import the global c_client_ws instance from app.py
-                                    from app import c_client_ws
-                                    
-                                    if not c_client_ws:
-                                        raise Exception("Global c_client_ws instance not available")
-                                    
-                                    # Create a mock websocket for the registration process
-                                    class RegistrationWebSocket:
-                                        def __init__(self, send_func):
-                                            self.send_func = send_func
-                                            self.remote_address = (client_host, client_port)
-                                            self.local_address = (server_host, server_port)
-                                            self.path = path
-                                        
-                                        async def send(self, message):
-                                            await self.send_func({
-                                                "type": "websocket.send",
-                                                "text": message
-                                            })
-                                        
-                                        def __aiter__(self):
-                                            return self
-                                        
-                                        async def __anext__(self):
-                                            # Return None to stop iteration (no message loop needed for registration)
-                                            raise StopAsyncIteration
-                                    
-                                    # Use the global WebSocket client instance
-                                    reg_websocket = RegistrationWebSocket(send)
-                                    
-                                    print(f"🔧 [ASGI] Calling real registration logic...")
-                                    logger.info("Calling real registration logic")
-                                    
-                                    # Process the registration using real logic
-                                    await c_client_ws._process_c_client_registration(reg_websocket, data, start_message_loop=False)
-                                    
-                                    print(f"✅ [ASGI] Real registration logic completed")
-                                    logger.info("Real registration logic completed")
-                                    
-                                except Exception as reg_error:
-                                    print(f"❌ [ASGI] Registration error: {reg_error}")
-                                    logger.error(f"Registration error: {reg_error}")
-                                    import traceback
-                                    logger.error(f"Registration traceback: {traceback.format_exc()}")
-                                    
-                                    # Fallback: Send simple response
-                                    response = {
-                                        "type": "c_client_registered",
-                                        "data": {
-                                            "success": False,
-                                            "message": f"Registration failed: {reg_error}",
-                                            "client_id": data.get("client_id"),
-                                            "user_id": data.get("user_id"),
-                                            "username": data.get("username"),
-                                            "node_id": data.get("node_id"),
-                                            "timestamp": int(time.time() * 1000)
-                                        }
-                                    }
-                                    
-                                    await send({
-                                        "type": "websocket.send",
-                                        "text": json.dumps(response)
-                                    })
-                            
-                            else:
-                                # Echo other messages for now
-                                echo_response = {
-                                    "type": "echo",
-                                    "data": data,
-                                    "timestamp": int(time.time() * 1000)
-                                }
-                                
-                                await send({
-                                    "type": "websocket.send",
-                                    "text": json.dumps(echo_response)
-                                })
-                                
-                                print(f"📤 [ASGI] Echo response sent")
-                                logger.info("Echo response sent")
-                                
-                        except json.JSONDecodeError as e:
-                            print(f"❌ [ASGI] Invalid JSON message: {e}")
-                            logger.error(f"Invalid JSON message: {e}")
-                            
-                            # Send error response
-                            error_response = {
-                                "type": "error",
-                                "message": "Invalid JSON format",
-                                "timestamp": int(time.time() * 1000)
-                            }
-                            
-                            await send({
-                                "type": "websocket.send",
-                                "text": json.dumps(error_response)
-                            })
-                    
-                    elif message["type"] == "websocket.disconnect":
-                        print(f"🔚 [ASGI] WebSocket disconnected")
-                        logger.info("WebSocket disconnected")
-                        break
-                        
-            except Exception as e:
-                print(f"❌ [ASGI] WebSocket error: {e}")
-                logger.error(f"WebSocket error: {e}")
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                try:
-                    await send({
-                        "type": "websocket.close",
-                        "code": 1011,
-                        "reason": "Internal server error"
-                    })
-                except:
-                    pass
-                        
-            except Exception as e:
-                print(f"❌ [ASGI] WebSocket error: {e}")
-                logger.error(f"WebSocket error: {e}")
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                try:
-                    await send({
-                        "type": "websocket.close",
-                        "code": 1011,
-                        "reason": "Internal server error"
-                    })
-                except:
-                    pass
-    
-    asgi_app = ASGIAppWithWebSocket(flask_asgi)
-    print(f"✅ [ASGI] ASGI app wrapper created successfully")
-    logger.info("✅ ASGI app wrapper created successfully")
-    
-except ImportError:
-    logger.warning("⚠️ asgiref not available, using basic ASGI wrapper")
-    
-    # Fallback: Basic ASGI wrapper (limited functionality)
-    class BasicASGIWrapper:
-        def __init__(self, wsgi_app):
-            self.wsgi_app = wsgi_app
-            self.websocket_started = False
-        
-        async def __call__(self, scope, receive, send):
-            # Start WebSocket server on first request
-            if not self.websocket_started:
-                print(f"🚀 [ASGI] Starting WebSocket server on first request...")
-                logger.info("🚀 Starting WebSocket server on first request...")
-                await startup()
-                self.websocket_started = True
-            
-            if scope["type"] != "http":
-                await send({
-                    "type": "http.response.start",
-                    "status": 400,
-                    "headers": [(b"content-type", b"text/plain")],
-                })
-                await send({
-                    "type": "http.response.body",
-                    "body": b"Only HTTP supported in basic wrapper",
-                })
-                return
-            
-            # Simple HTTP handling (not production-ready)
-            await send({
-                "type": "http.response.start",
-                "status": 200,
-                "headers": [(b"content-type", b"text/html")],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": b"<h1>B-Client</h1><p>WebSocket server running separately on port " + str(int(os.environ.get('PORT', 8000))).encode() + b"</p>",
-            })
-    
-    asgi_app = BasicASGIWrapper(app)
-    print(f"⚠️ [ASGI] Using BasicASGIWrapper (limited functionality)")
-    logger.warning("⚠️ Using BasicASGIWrapper (limited functionality)")
+            except:
+                pass
 
-# WebSocket handling is now integrated into ASGI app
-async def startup():
-    """No longer needed - WebSocket handling integrated into ASGI app"""
-    print(f"ℹ️ [ASGI] WebSocket handling integrated into ASGI app - no startup needed")
-    logger.info("WebSocket handling integrated into ASGI app - no startup needed")
+# Create the ASGI application
+asgi_app = ASGIAppWithWebSocket(flask_asgi)
 
-# WebSocket server will be started when Hypercorn calls the ASGI app
-print(f"🔧 [ASGI] ASGI app created, WebSocket server will start with Hypercorn")
-logger.info("🔧 ASGI app created, WebSocket server will start with Hypercorn")
+print(f"🔧 [ASGI] ASGI application created with real WebSocket service")
+logger.info("ASGI application created with real WebSocket service")
 
-# For Hypercorn deployment
-def get_asgi_app():
-    """Get ASGI application for Hypercorn"""
-    return asgi_app
-
-# Export the ASGI app for direct import
-__all__ = ['asgi_app', 'get_asgi_app']
-
-# For testing/direct usage
-if __name__ == "__main__":
-    async def main():
-        print(f"🚀 [ASGI] Starting main function...")
-        # Start WebSocket server
-        await startup()
-        
-        # Configure Hypercorn
-        config = Config()
-        config.bind = ["0.0.0.0:8000"]
-        config.use_reloader = False
-        
-        print(f"🌐 [ASGI] Starting ASGI server with Hypercorn on 0.0.0.0:8000...")
-        logger.info("🚀 Starting ASGI server with Hypercorn...")
-        await serve(asgi_app, config)
-    
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("👋 Server stopped by user")
+# Export the ASGI application
+__all__ = ['asgi_app']
