@@ -688,23 +688,31 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
         if login_response.status_code == 302 or (login_response.status_code == 200 and session_cookie):
             logger.info("NSN login successful after registration")
             
-            # Get session data
+            # Get user info from NSN using the session cookie we just obtained
             try:
-                session_response = requests.get(get_nsn_api_url('session_data'), timeout=10)
-                if session_response.status_code == 200:
-                    session_data = session_response.json()
-                    if session_data.get('success'):
-                        session_cookie = session_data.get('session_cookie')
-                        nsn_user_id = session_data.get('nsn_user_id')
-                        nsn_username = session_data.get('nsn_username')
+                # Use NSN's current-user API endpoint with the session cookie from login
+                nsn_current_user_url = f"{get_nsn_base_url()}/api/nsn/current-user"
+                current_user_data = {
+                    'session_cookie': session_cookie
+                }
+                user_response = requests.post(nsn_current_user_url, json=current_user_data, timeout=10)
+                
+                if user_response.status_code == 200:
+                    user_data = user_response.json()
+                    if user_data.get('success'):
+                        nsn_user_id = user_data.get('user_id')
+                        nsn_username = user_data.get('username')
+                        logger.info(f"NSN user info retrieved: {nsn_username} (ID: {nsn_user_id})")
                     else:
+                        logger.warning(f"Failed to get NSN user info: {user_data.get('error')}")
                         nsn_user_id = None
                         nsn_username = unique_username
                 else:
+                    logger.warning(f"NSN current-user API failed with status: {user_response.status_code}")
                     nsn_user_id = None
                     nsn_username = unique_username
             except Exception as e:
-                logger.warning(f"Failed to get session data: {e}")
+                logger.warning(f"Failed to get NSN user info: {e}")
                 nsn_user_id = None
                 nsn_username = unique_username
             
