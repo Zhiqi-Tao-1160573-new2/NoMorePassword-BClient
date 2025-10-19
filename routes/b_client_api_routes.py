@@ -28,12 +28,13 @@ def b_client_info():
         # HTTP port is the main PORT environment variable
         http_port = int(os.environ.get('PORT', 8000))
         
-        # WebSocket port is HTTP port + 1 for ASGI deployment
+        # WebSocket port configuration
         # In local development, use the configured port
+        # In production (Heroku), use the same port as HTTP
         if environment == 'local':
             websocket_port = 8766  # Default local WebSocket port
         else:
-            websocket_port = http_port + 1  # Production: HTTP port + 1
+            websocket_port = http_port  # Production: Same port as HTTP for Heroku
         
         # Get B-Client WebSocket server configuration
         websocket_config = {
@@ -81,7 +82,7 @@ def websocket_info():
         if environment == 'local':
             websocket_port = 8766  # Default local WebSocket port
         else:
-            websocket_port = http_port + 1  # Production: HTTP port + 1
+            websocket_port = http_port  # Production: Same port as HTTP for Heroku
         
         return jsonify({
             'websocket_url': f"ws://0.0.0.0:{websocket_port}",

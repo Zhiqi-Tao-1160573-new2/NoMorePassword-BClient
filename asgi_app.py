@@ -26,9 +26,9 @@ async def start_websocket_server_background():
     global websocket_server
     
     try:
-        # Get WebSocket port (use PORT + 1 to avoid conflicts with HTTP)
+        # Get port (use same port for both HTTP and WebSocket in Heroku)
         port = int(os.environ.get('PORT', 8000))
-        ws_port = port + 1
+        ws_port = port  # Use same port for WebSocket in Heroku
         
         logger.info(f"Starting WebSocket server on port {ws_port}")
         
