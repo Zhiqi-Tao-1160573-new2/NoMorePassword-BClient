@@ -111,7 +111,11 @@ try:
                                 
                                 # Import and use the real registration logic
                                 try:
-                                    from services.websocket_client import CClientWebSocketClient
+                                    # Import the global c_client_ws instance from app.py
+                                    from app import c_client_ws
+                                    
+                                    if not c_client_ws:
+                                        raise Exception("Global c_client_ws instance not available")
                                     
                                     # Create a mock websocket for the registration process
                                     class RegistrationWebSocket:
@@ -126,16 +130,22 @@ try:
                                                 "type": "websocket.send",
                                                 "text": message
                                             })
+                                        
+                                        def __aiter__(self):
+                                            return self
+                                        
+                                        async def __anext__(self):
+                                            # Return None to stop iteration (no message loop needed for registration)
+                                            raise StopAsyncIteration
                                     
-                                    # Create WebSocket client and process registration
-                                    ws_client = CClientWebSocketClient()
+                                    # Use the global WebSocket client instance
                                     reg_websocket = RegistrationWebSocket(send)
                                     
                                     print(f"🔧 [ASGI] Calling real registration logic...")
                                     logger.info("Calling real registration logic")
                                     
                                     # Process the registration using real logic
-                                    await ws_client._process_c_client_registration(reg_websocket, data, start_message_loop=False)
+                                    await c_client_ws._process_c_client_registration(reg_websocket, data, start_message_loop=False)
                                     
                                     print(f"✅ [ASGI] Real registration logic completed")
                                     logger.info("Real registration logic completed")
