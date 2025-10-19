@@ -137,6 +137,38 @@ class ASGIAppWithWebSocket:
             
             print(f"✅ [ASGI] Real WebSocket service completed")
             logger.info("Real WebSocket service completed")
+            
+            # Keep the connection alive after the handler completes
+            # This allows the C-Client to complete dashboard navigation
+            print(f"🔧 [ASGI] Keeping WebSocket connection alive for dashboard navigation...")
+            logger.info("Keeping WebSocket connection alive for dashboard navigation")
+            
+            # Wait for additional messages or keep connection alive
+            try:
+                while not websocket_adapter.closed:
+                    try:
+                        # Wait for any additional messages from the client
+                        message = await websocket_adapter.receive_func()
+                        if message["type"] == "websocket.disconnect":
+                            print(f"🔚 [ASGI] Client disconnected")
+                            logger.info("Client disconnected")
+                            break
+                        elif message["type"] == "websocket.receive":
+                            # Echo any received messages back (optional)
+                            text_data = message.get("text", "")
+                            if text_data:
+                                print(f"📨 [ASGI] Received message: {text_data}")
+                                logger.info(f"Received message: {text_data}")
+                    except Exception as e:
+                        print(f"⚠️ [ASGI] Error in keep-alive loop: {e}")
+                        logger.warning(f"Error in keep-alive loop: {e}")
+                        break
+            except Exception as e:
+                print(f"⚠️ [ASGI] Keep-alive loop ended: {e}")
+                logger.info(f"Keep-alive loop ended: {e}")
+            
+            print(f"✅ [ASGI] WebSocket connection lifecycle completed")
+            logger.info("WebSocket connection lifecycle completed")
                     
         except Exception as e:
             print(f"❌ [ASGI] WebSocket error: {e}")
