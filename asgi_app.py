@@ -26,49 +26,15 @@ websocket_server = None
 websocket_task = None
 
 async def start_websocket_server_background():
-    """Start WebSocket server in background"""
+    """No longer needed - WebSocket handling integrated into ASGI app"""
     global websocket_server
     
-    try:
-        # Get port (try different ports if main port is occupied)
-        port = int(os.environ.get('PORT', 8000))
-        
-        # Try different ports for WebSocket server
-        for port_offset in range(5):  # Try up to 5 different ports
-            ws_port = port + port_offset
-            print(f"🚀 [ASGI] Attempting to start WebSocket server on port {ws_port}")
-            logger.info(f"Attempting to start WebSocket server on port {ws_port}")
-            
-            # Start WebSocket server
-            print(f"🔧 [ASGI] Calling c_client_ws.start_server(host='0.0.0.0', port={ws_port})")
-            websocket_server = await c_client_ws.start_server(host='0.0.0.0', port=ws_port)
-            
-            if websocket_server is not None:
-                print(f"✅ [ASGI] WebSocket server started successfully on port {ws_port}")
-                logger.info(f"✅ WebSocket server started successfully on port {ws_port}")
-                break
-            else:
-                print(f"❌ [ASGI] Failed to start WebSocket server on port {ws_port}, trying next port...")
-                logger.warning(f"Failed to start WebSocket server on port {ws_port}, trying next port...")
-                continue
-        
-        print(f"📦 [ASGI] WebSocket server object created: {websocket_server}")
-        logger.info(f"WebSocket server object created: {websocket_server}")
-        
-        if websocket_server:
-            print(f"🔄 [ASGI] Waiting for WebSocket server to close...")
-            # Keep server running
-            await websocket_server.wait_closed()
-            print(f"🔚 [ASGI] WebSocket server closed")
-        else:
-            print(f"❌ [ASGI] Failed to start WebSocket server on any port")
-            logger.error("❌ Failed to start WebSocket server on any port")
-            
-    except Exception as e:
-        print(f"❌ [ASGI] WebSocket server error: {e}")
-        logger.error(f"❌ WebSocket server error: {e}")
-        print(f"❌ [ASGI] Traceback: {traceback.format_exc()}")
-        logger.error(traceback.format_exc())
+    print(f"ℹ️ [ASGI] No separate WebSocket server needed - integrated into ASGI app")
+    logger.info("No separate WebSocket server needed - integrated into ASGI app")
+    
+    # No separate WebSocket server
+    websocket_server = None
+    return None
 
 # Create ASGI application using Flask with WSGI-to-ASGI adapter
 try:
@@ -87,15 +53,55 @@ try:
             self.websocket_started = False
         
         async def __call__(self, scope, receive, send):
-            # Start WebSocket server on first request
-            if not self.websocket_started:
-                print(f"🚀 [ASGI] Starting WebSocket server on first request...")
-                logger.info("🚀 Starting WebSocket server on first request...")
-                await startup()
-                self.websocket_started = True
+            # Handle WebSocket connections directly in ASGI
+            if scope["type"] == "websocket":
+                print(f"🔧 [ASGI] Handling WebSocket connection directly")
+                logger.info("Handling WebSocket connection directly")
+                
+                # Handle WebSocket connection using our WebSocket client
+                await self.handle_websocket_connection(scope, receive, send)
+                return
             
-            # Handle the request with Flask
+            # Handle HTTP requests with Flask
             await self.flask_app(scope, receive, send)
+        
+        async def handle_websocket_connection(self, scope, receive, send):
+            """Handle WebSocket connections"""
+            try:
+                # Accept WebSocket connection
+                await send({
+                    "type": "websocket.accept",
+                })
+                
+                print(f"✅ [ASGI] WebSocket connection accepted")
+                logger.info("WebSocket connection accepted")
+                
+                # Handle WebSocket messages
+                while True:
+                    message = await receive()
+                    if message["type"] == "websocket.receive":
+                        # Process WebSocket message
+                        print(f"📨 [ASGI] Received WebSocket message")
+                        logger.info("Received WebSocket message")
+                        
+                        # Echo back the message (for testing)
+                        await send({
+                            "type": "websocket.send",
+                            "text": f"Echo: {message.get('text', '')}"
+                        })
+                    elif message["type"] == "websocket.disconnect":
+                        print(f"🔚 [ASGI] WebSocket disconnected")
+                        logger.info("WebSocket disconnected")
+                        break
+                        
+            except Exception as e:
+                print(f"❌ [ASGI] WebSocket error: {e}")
+                logger.error(f"WebSocket error: {e}")
+                await send({
+                    "type": "websocket.close",
+                    "code": 1011,
+                    "reason": "Internal server error"
+                })
     
     asgi_app = ASGIAppWithWebSocket(flask_asgi)
     print(f"✅ [ASGI] ASGI app wrapper created successfully")
@@ -145,16 +151,11 @@ except ImportError:
     print(f"⚠️ [ASGI] Using BasicASGIWrapper (limited functionality)")
     logger.warning("⚠️ Using BasicASGIWrapper (limited functionality)")
 
-# Start WebSocket server in background
+# WebSocket handling is now integrated into ASGI app
 async def startup():
-    """Startup function to initialize WebSocket server"""
-    global websocket_task
-    
-    if not websocket_task:
-        print(f"🎯 [ASGI] Creating WebSocket server task...")
-        websocket_task = asyncio.create_task(start_websocket_server_background())
-        print(f"✅ [ASGI] WebSocket server task created: {websocket_task}")
-        logger.info("🚀 WebSocket server task created")
+    """No longer needed - WebSocket handling integrated into ASGI app"""
+    print(f"ℹ️ [ASGI] WebSocket handling integrated into ASGI app - no startup needed")
+    logger.info("WebSocket handling integrated into ASGI app - no startup needed")
 
 # WebSocket server will be started when Hypercorn calls the ASGI app
 print(f"🔧 [ASGI] ASGI app created, WebSocket server will start with Hypercorn")

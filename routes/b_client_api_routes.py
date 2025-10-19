@@ -34,7 +34,7 @@ def b_client_info():
         if environment == 'local':
             websocket_port = 8766  # Default local WebSocket port
         else:
-            websocket_port = http_port  # Production: Same port as HTTP for Heroku
+            websocket_port = http_port  # Production: Same port as HTTP for Heroku (integrated WebSocket)
         
         # Get B-Client WebSocket server configuration
         websocket_config = {
@@ -82,7 +82,7 @@ def websocket_info():
         if environment == 'local':
             websocket_port = 8766  # Default local WebSocket port
         else:
-            websocket_port = http_port  # Production: Same port as HTTP for Heroku
+            websocket_port = http_port  # Production: Same port as HTTP for Heroku (integrated WebSocket)
         
         return jsonify({
             'websocket_url': f"ws://0.0.0.0:{websocket_port}",
