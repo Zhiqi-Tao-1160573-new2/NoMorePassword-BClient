@@ -8,6 +8,7 @@ Combines Flask HTTP routes with WebSocket server using Hypercorn
 import os
 import asyncio
 import threading
+import time
 import traceback
 
 # Third-party imports
@@ -66,71 +67,120 @@ try:
             await self.flask_app(scope, receive, send)
         
         async def handle_websocket_connection(self, scope, receive, send):
-            """Handle WebSocket connections using the real C-Client handler"""
+            """Handle WebSocket connections directly using ASGI interface"""
             try:
                 # Accept WebSocket connection
                 await send({
                     "type": "websocket.accept",
                 })
                 
-                print(f"✅ [ASGI] WebSocket connection accepted")
-                logger.info("WebSocket connection accepted")
+                # Extract client information from ASGI scope
+                client_host = scope.get("client", ["unknown"])[0] if scope.get("client") else "unknown"
+                client_port = scope.get("client", [0, 0])[1] if scope.get("client") else 0
+                server_host = scope.get("server", ["unknown"])[0] if scope.get("server") else "unknown"
+                server_port = scope.get("server", [0, 0])[1] if scope.get("server") else 0
+                path = scope.get("path", "/ws")
                 
-                # Import and initialize the real WebSocket client
-                try:
-                    # Import the class and create instance
-                    from services.websocket_client import CClientWebSocketClient
-                    print(f"✅ [ASGI] Successfully imported CClientWebSocketClient class")
-                    logger.info("Successfully imported CClientWebSocketClient class")
-                    
-                    # Create instance
-                    c_client_ws = CClientWebSocketClient()
-                    print(f"✅ [ASGI] Successfully created c_client_ws instance: {c_client_ws}")
-                    logger.info(f"Successfully created c_client_ws instance: {c_client_ws}")
-                    
-                except Exception as import_error:
-                    print(f"❌ [ASGI] Failed to import/create c_client_ws: {import_error}")
-                    logger.error(f"Failed to import/create c_client_ws: {import_error}")
-                    raise
+                print(f"✅ [ASGI] WebSocket connection accepted from {client_host}:{client_port}")
+                logger.info(f"WebSocket connection accepted from {client_host}:{client_port}")
+                print(f"🔧 [ASGI] Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
+                logger.info(f"Connection details: client={client_host}:{client_port}, server={server_host}:{server_port}, path={path}")
                 
-                # Create a mock websocket object that implements the websockets interface
-                class MockWebSocket:
-                    def __init__(self, send_func, receive_func):
-                        self.send_func = send_func
-                        self.receive_func = receive_func
-                        self.closed = False
+                # Handle WebSocket messages directly using ASGI interface
+                print(f"🔧 [ASGI] Starting WebSocket message loop...")
+                logger.info("Starting WebSocket message loop")
+                
+                while True:
+                    message = await receive()
                     
-                    async def send(self, message):
-                        if not self.closed:
-                            await self.send_func({
+                    if message["type"] == "websocket.receive":
+                        # Process incoming message
+                        text_data = message.get("text", "")
+                        print(f"📨 [ASGI] Received WebSocket message: {text_data[:100]}...")
+                        logger.info(f"Received WebSocket message: {text_data[:100]}...")
+                        
+                        try:
+                            # Parse JSON message
+                            import json
+                            data = json.loads(text_data)
+                            
+                            # Handle registration message
+                            if data.get("type") == "c_client_register":
+                                print(f"🔧 [ASGI] Processing C-Client registration...")
+                                logger.info("Processing C-Client registration")
+                                
+                                # Send registration response
+                                response = {
+                                    "type": "c_client_registered",
+                                    "data": {
+                                        "success": True,
+                                        "message": "C-Client registered successfully",
+                                        "client_id": data.get("client_id"),
+                                        "user_id": data.get("user_id"),
+                                        "username": data.get("username"),
+                                        "node_id": data.get("node_id"),
+                                        "timestamp": int(time.time() * 1000)
+                                    }
+                                }
+                                
+                                await send({
+                                    "type": "websocket.send",
+                                    "text": json.dumps(response)
+                                })
+                                
+                                print(f"✅ [ASGI] Registration response sent")
+                                logger.info("Registration response sent")
+                            
+                            else:
+                                # Echo other messages for now
+                                echo_response = {
+                                    "type": "echo",
+                                    "data": data,
+                                    "timestamp": int(time.time() * 1000)
+                                }
+                                
+                                await send({
+                                    "type": "websocket.send",
+                                    "text": json.dumps(echo_response)
+                                })
+                                
+                                print(f"📤 [ASGI] Echo response sent")
+                                logger.info("Echo response sent")
+                                
+                        except json.JSONDecodeError as e:
+                            print(f"❌ [ASGI] Invalid JSON message: {e}")
+                            logger.error(f"Invalid JSON message: {e}")
+                            
+                            # Send error response
+                            error_response = {
+                                "type": "error",
+                                "message": "Invalid JSON format",
+                                "timestamp": int(time.time() * 1000)
+                            }
+                            
+                            await send({
                                 "type": "websocket.send",
-                                "text": message
+                                "text": json.dumps(error_response)
                             })
                     
-                    async def recv(self):
-                        while True:
-                            message = await self.receive_func()
-                            if message["type"] == "websocket.receive":
-                                return message.get("text", "")
-                            elif message["type"] == "websocket.disconnect":
-                                self.closed = True
-                                raise websockets.exceptions.ConnectionClosed(None, None)
-                
-                # Create mock websocket and handle connection
-                print(f"🔧 [ASGI] Creating MockWebSocket adapter...")
-                logger.info("Creating MockWebSocket adapter")
-                
-                mock_websocket = MockWebSocket(send, receive)
-                print(f"✅ [ASGI] MockWebSocket created successfully")
-                logger.info("MockWebSocket created successfully")
-                
-                print(f"🔧 [ASGI] Calling handle_c_client_connection...")
-                logger.info("Calling handle_c_client_connection")
-                
-                await c_client_ws.handle_c_client_connection(mock_websocket)
-                
-                print(f"✅ [ASGI] handle_c_client_connection completed")
-                logger.info("handle_c_client_connection completed")
+                    elif message["type"] == "websocket.disconnect":
+                        print(f"🔚 [ASGI] WebSocket disconnected")
+                        logger.info("WebSocket disconnected")
+                        break
+                        
+            except Exception as e:
+                print(f"❌ [ASGI] WebSocket error: {e}")
+                logger.error(f"WebSocket error: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                try:
+                    await send({
+                        "type": "websocket.close",
+                        "code": 1011,
+                        "reason": "Internal server error"
+                    })
+                except:
+                    pass
                         
             except Exception as e:
                 print(f"❌ [ASGI] WebSocket error: {e}")
