@@ -1,5 +1,5 @@
 {
-  "current_environment": "production",
+  "current_environment": "heroku",
   "environments": {
     "local": {
       "name": "local",
@@ -26,6 +26,20 @@
         "server_host": "127.0.0.1",
         "server_port": 8766
       }
+    },
+    "heroku": {
+      "name": "heroku",
+      "api": {
+        "nsn_url": "https://comp693nsnproject.pythonanywhere.com",
+        "nsn_host": "comp693nsnproject.pythonanywhere.com",
+        "nsn_port": 443
+      },
+      "websocket": {
+        "enabled": true,
+        "server_host": "nomorepassword-bclient.herokuapp.com",
+        "server_port": 443
+      },
+      "b_client_url": "https://nomorepassword-62a80fa63184.herokuapp.com"
     }
   },
   "network": {
@@ -40,11 +54,13 @@
     "enabled": true,
     "allowed_domains": [
       "comp693nsnproject.pythonanywhere.com",
+      "nomorepassword-bclient.herokuapp.com",
       "localhost:5000",
       "127.0.0.1:5000"
     ],
     "allowed_patterns": [
       "https://comp693nsnproject.pythonanywhere.com/*",
+      "https://nomorepassword-62a80fa63184.herokuapp.com/*",
       "http://localhost:5000/*",
       "http://127.0.0.1:5000/*"
     ]
