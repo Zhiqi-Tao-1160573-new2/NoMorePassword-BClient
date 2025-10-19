@@ -34,6 +34,7 @@ async def start_websocket_server_background():
         
         # Start WebSocket server
         websocket_server = await c_client_ws.start_server(host='0.0.0.0', port=ws_port)
+        logger.info(f"WebSocket server object created: {websocket_server}")
         
         if websocket_server:
             logger.info(f"✅ WebSocket server started successfully on port {ws_port}")
