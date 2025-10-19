@@ -30,22 +30,31 @@ async def start_websocket_server_background():
         port = int(os.environ.get('PORT', 8000))
         ws_port = port  # Use same port for WebSocket in Heroku
         
+        print(f"🚀 [ASGI] Starting WebSocket server on port {ws_port}")
         logger.info(f"Starting WebSocket server on port {ws_port}")
         
         # Start WebSocket server
+        print(f"🔧 [ASGI] Calling c_client_ws.start_server(host='0.0.0.0', port={ws_port})")
         websocket_server = await c_client_ws.start_server(host='0.0.0.0', port=ws_port)
+        print(f"📦 [ASGI] WebSocket server object created: {websocket_server}")
         logger.info(f"WebSocket server object created: {websocket_server}")
         
         if websocket_server:
+            print(f"✅ [ASGI] WebSocket server started successfully on port {ws_port}")
             logger.info(f"✅ WebSocket server started successfully on port {ws_port}")
+            print(f"🔄 [ASGI] Waiting for WebSocket server to close...")
             # Keep server running
             await websocket_server.wait_closed()
+            print(f"🔚 [ASGI] WebSocket server closed")
         else:
+            print(f"❌ [ASGI] Failed to start WebSocket server")
             logger.error("❌ Failed to start WebSocket server")
             
     except Exception as e:
+        print(f"❌ [ASGI] WebSocket server error: {e}")
         logger.error(f"❌ WebSocket server error: {e}")
         import traceback
+        print(f"❌ [ASGI] Traceback: {traceback.format_exc()}")
         logger.error(traceback.format_exc())
 
 # Create ASGI application using Flask with WSGI-to-ASGI adapter
@@ -98,17 +107,23 @@ async def startup():
     global websocket_task
     
     if not websocket_task:
+        print(f"🎯 [ASGI] Creating WebSocket server task...")
         websocket_task = asyncio.create_task(start_websocket_server_background())
+        print(f"✅ [ASGI] WebSocket server task created: {websocket_task}")
         logger.info("🚀 WebSocket server task created")
 
 # Initialize WebSocket server on module import
 try:
+    print(f"🔧 [ASGI] Initializing WebSocket server on module import...")
     # Create event loop and start WebSocket server
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+    print(f"🔄 [ASGI] Creating startup task...")
     loop.create_task(startup())
+    print(f"✅ [ASGI] WebSocket server startup scheduled")
     logger.info("🚀 WebSocket server startup scheduled")
 except Exception as e:
+    print(f"❌ [ASGI] Failed to schedule WebSocket server startup: {e}")
     logger.error(f"❌ Failed to schedule WebSocket server startup: {e}")
 
 # For Hypercorn deployment
@@ -124,6 +139,7 @@ if __name__ == "__main__":
     import asyncio
     
     async def main():
+        print(f"🚀 [ASGI] Starting main function...")
         # Start WebSocket server
         await startup()
         
@@ -132,6 +148,7 @@ if __name__ == "__main__":
         config.bind = ["0.0.0.0:8000"]
         config.use_reloader = False
         
+        print(f"🌐 [ASGI] Starting ASGI server with Hypercorn on 0.0.0.0:8000...")
         logger.info("🚀 Starting ASGI server with Hypercorn...")
         await serve(asgi_app, config)
     

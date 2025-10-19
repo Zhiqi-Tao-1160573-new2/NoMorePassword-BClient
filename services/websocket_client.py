@@ -715,7 +715,11 @@ class CClientWebSocketClient:
     async def start_server(self, host='0.0.0.0', port=8766):
         """Start WebSocket server for C-Client connections"""
         try:
+            print(f"🔧 [WebSocket] Starting WebSocket server on {host}:{port}")
+            self.logger.info(f"Starting WebSocket server on {host}:{port}")
+            
             # Configure WebSocket server with better error handling
+            print(f"🔧 [WebSocket] Calling websockets.serve()...")
             server = await websockets.serve(
                 self.handle_c_client_connection, 
                 host, 
@@ -727,11 +731,19 @@ class CClientWebSocketClient:
                 max_size=2**20,    # 1MB max message size
                 max_queue=32       # Max 32 messages in queue
             )
+            
+            print(f"✅ [WebSocket] WebSocket server started successfully on ws://{host}:{port}")
+            print(f"📋 [WebSocket] Server object: {server}")
+            print(f"📋 [WebSocket] Server configured with ping/pong and connection management")
+            
             self.logger.info(f"WebSocket server started on ws://{host}:{port}")
             self.logger.info(f"Server configured with ping/pong and connection management")
             return server
         except Exception as e:
+            print(f"❌ [WebSocket] Failed to start WebSocket server: {e}")
             self.logger.error(f"Failed to start WebSocket server: {e}")
+            import traceback
+            print(f"❌ [WebSocket] Traceback: {traceback.format_exc()}")
             return None
     
     async def _handle_node_management_async(self, websocket, nmp_params):
