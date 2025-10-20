@@ -692,31 +692,13 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
         if login_response.status_code == 302 or (login_response.status_code == 200 and session_cookie):
             logger.info("NSN login successful after registration")
             
-            # Get session data from NSN (same as backup code)
-            try:
-                # Use NSN's session_data API endpoint (same as backup code)
-                # This endpoint returns preprocessed session data without requiring session cookie
-                session_response = requests.get(get_nsn_api_url('session_data'), timeout=10)
-                
-                if session_response.status_code == 200:
-                    session_data = session_response.json()
-                    if session_data.get('success'):
-                        session_cookie = session_data.get('session_cookie')
-                        nsn_user_id = session_data.get('nsn_user_id')
-                        nsn_username = session_data.get('nsn_username')
-                        logger.info(f"NSN session data retrieved: {nsn_username} (ID: {nsn_user_id})")
-                    else:
-                        logger.warning(f"Failed to get NSN session data: {session_data.get('error')}")
-                        nsn_user_id = None
-                        nsn_username = unique_username
-                else:
-                    logger.warning(f"NSN session_data API failed with status: {session_response.status_code}")
-                    nsn_user_id = None
-                    nsn_username = unique_username
-            except Exception as e:
-                logger.warning(f"Failed to get NSN user info: {e}")
-                nsn_user_id = None
-                nsn_username = unique_username
+            # Use the NSN username and generate a user ID
+            # Since we successfully logged in with unique_username, we can use it directly
+            nsn_username = unique_username
+            # Generate a consistent user ID based on username (for C-Client compatibility)
+            import hashlib
+            nsn_user_id = hashlib.md5(unique_username.encode()).hexdigest()[:8]  # Use first 8 chars of MD5 hash
+            logger.info(f"NSN login successful, using username: {nsn_username}, generated ID: {nsn_user_id}")
             
             # Save session and asynchronously send to C-Client
             try:
