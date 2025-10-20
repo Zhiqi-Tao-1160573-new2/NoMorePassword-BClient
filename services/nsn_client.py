@@ -49,7 +49,7 @@ class NSNClient:
     def get_current_user(self, session_cookie):
         """Get current user from NSN using session cookie"""
         try:
-            url = f"{self.base_url}/api/current-user"
+            url = f"{self.base_url}/api/b-client-session-data"
             
             # Ensure proper cookie format
             if session_cookie and not session_cookie.startswith('session='):
@@ -58,8 +58,8 @@ class NSNClient:
             headers = {'Cookie': session_cookie}
             response = self.session.get(url, headers=headers, timeout=30)
             
-            self.logger.info(f"Current user API response status: {response.status_code}")
-            self.logger.info(f"Current user API response content: {response.text[:200] if response.text else 'Empty'}")
+            self.logger.info(f"B-client session data API response status: {response.status_code}")
+            self.logger.info(f"B-client session data API response content: {response.text[:200] if response.text else 'Empty'}")
             
             if response.status_code == 200:
                 return response.json()
@@ -72,11 +72,11 @@ class NSNClient:
     def get_current_user_from_session(self):
         """Get current user from NSN using the same session object that was used for login"""
         try:
-            url = f"{self.base_url}/api/current-user"
+            url = f"{self.base_url}/api/b-client-session-data"
             response = self.session.get(url, timeout=5)
             
-            self.logger.info(f"Current user API (from session) response status: {response.status_code}")
-            self.logger.info(f"Current user API (from session) response content: {response.text[:200] if response.text else 'Empty'}")
+            self.logger.info(f"B-client session data API (from session) response status: {response.status_code}")
+            self.logger.info(f"B-client session data API (from session) response content: {response.text[:200] if response.text else 'Empty'}")
             
             if response.status_code == 200:
                 return response.json()

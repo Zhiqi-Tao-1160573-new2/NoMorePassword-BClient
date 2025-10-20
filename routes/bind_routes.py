@@ -410,7 +410,7 @@ def _handle_existing_cookie_check(nmp_user_id, nmp_username, channel_id=None, no
         # Use the existing session cookie to get current user info
         nsn_user_info = nsn_client.get_current_user(existing_cookie.cookie)
         if nsn_user_info.get('success'):
-            nsn_user_id = nsn_user_info.get('user_id')
+            nsn_user_id = nsn_user_info.get('nsn_user_id')
             logger.info(f"Retrieved NSN user info from existing session: {nsn_username} (ID: {nsn_user_id})")
         else:
             logger.warning(f"Failed to get NSN user info from existing session: {nsn_user_info.get('error')}")
@@ -692,24 +692,24 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
         if login_response.status_code == 302 or (login_response.status_code == 200 and session_cookie):
             logger.info("NSN login successful after registration")
             
-            # Get NSN user info from current-user API
+            # Get NSN user info from session-data API
             try:
-                # Call NSN's current-user API to get real user information
-                current_user_url = get_nsn_api_url('current_user')
-                current_user_response = requests.get(current_user_url, headers={'Cookie': session_cookie}, timeout=10)
+                # Call NSN's session-data API to get real user information
+                session_data_url = get_nsn_api_url('session_data')
+                session_data_response = requests.get(session_data_url, headers={'Cookie': session_cookie}, timeout=10)
                 
-                if current_user_response.status_code == 200:
-                    user_info = current_user_response.json()
+                if session_data_response.status_code == 200:
+                    user_info = session_data_response.json()
                     if user_info.get('success'):
-                        nsn_user_id = user_info.get('user_id')
-                        nsn_username = user_info.get('username')
-                        logger.info(f"NSN current-user API success: {nsn_username} (ID: {nsn_user_id})")
+                        nsn_user_id = user_info.get('nsn_user_id')
+                        nsn_username = user_info.get('nsn_username')
+                        logger.info(f"NSN session-data API success: {nsn_username} (ID: {nsn_user_id})")
                     else:
-                        logger.warning(f"NSN current-user API failed: {user_info.get('error')}")
+                        logger.warning(f"NSN session-data API failed: {user_info.get('error')}")
                         nsn_user_id = None
                         nsn_username = unique_username
                 else:
-                    logger.warning(f"NSN current-user API failed with status: {current_user_response.status_code}")
+                    logger.warning(f"NSN session-data API failed with status: {session_data_response.status_code}")
                     nsn_user_id = None
                     nsn_username = unique_username
             except Exception as e:
