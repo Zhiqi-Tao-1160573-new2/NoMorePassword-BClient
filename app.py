@@ -777,8 +777,7 @@ nsn_client = NSNClient()
 # Note: WebSocket server startup has been moved to services/websocket_server.py
 
 
-# Initialize C-Client WebSocket client (without send_session_to_client, will inject later)
-init_websocket_client(app, db, UserCookie, UserAccount)
+# Initialize C-Client WebSocket client (will be fully initialized after send_session_to_client is defined)
 c_client_ws = CClientWebSocketClient() if websockets else None
 
 # Initialize WebSocket server
