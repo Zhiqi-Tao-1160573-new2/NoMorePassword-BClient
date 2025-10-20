@@ -696,10 +696,10 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
             try:
                 # Use NSN's current-user API endpoint with the session cookie from login
                 nsn_current_user_url = get_nsn_api_url('session_data')
-                current_user_data = {
-                    'session_cookie': session_cookie
+                headers = {
+                    'Cookie': session_cookie
                 }
-                user_response = requests.post(nsn_current_user_url, json=current_user_data, timeout=10)
+                user_response = requests.get(nsn_current_user_url, headers=headers, timeout=10)
                 
                 if user_response.status_code == 200:
                     user_data = user_response.json()
