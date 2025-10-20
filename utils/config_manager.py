@@ -95,7 +95,7 @@ class ConfigManager:
                 'base_url': nsn_url,
                 'name': 'NSN Production Server',
                 'api_endpoints': {
-                    'session_data': f"{nsn_url}/api/nsn/current-user",
+                    'session_data': f"{nsn_url}/api/current-user",
                     'signup': f"{nsn_url}/signup",
                     'login': f"{nsn_url}/login"
                 }
