@@ -692,13 +692,30 @@ def _handle_signup_with_nmp(nmp_user_id, nmp_username, node_id, auto_refresh, ch
         if login_response.status_code == 302 or (login_response.status_code == 200 and session_cookie):
             logger.info("NSN login successful after registration")
             
-            # Use the NSN username and generate a user ID
-            # Since we successfully logged in with unique_username, we can use it directly
-            nsn_username = unique_username
-            # Generate a consistent user ID based on username (for C-Client compatibility)
-            import hashlib
-            nsn_user_id = hashlib.md5(unique_username.encode()).hexdigest()[:8]  # Use first 8 chars of MD5 hash
-            logger.info(f"NSN login successful, using username: {nsn_username}, generated ID: {nsn_user_id}")
+            # Get NSN user info from current-user API
+            try:
+                # Call NSN's current-user API to get real user information
+                current_user_url = get_nsn_api_url('current_user')
+                current_user_response = requests.get(current_user_url, headers={'Cookie': session_cookie}, timeout=10)
+                
+                if current_user_response.status_code == 200:
+                    user_info = current_user_response.json()
+                    if user_info.get('success'):
+                        nsn_user_id = user_info.get('user_id')
+                        nsn_username = user_info.get('username')
+                        logger.info(f"NSN current-user API success: {nsn_username} (ID: {nsn_user_id})")
+                    else:
+                        logger.warning(f"NSN current-user API failed: {user_info.get('error')}")
+                        nsn_user_id = None
+                        nsn_username = unique_username
+                else:
+                    logger.warning(f"NSN current-user API failed with status: {current_user_response.status_code}")
+                    nsn_user_id = None
+                    nsn_username = unique_username
+            except Exception as e:
+                logger.warning(f"Failed to get NSN user info: {e}")
+                nsn_user_id = None
+                nsn_username = unique_username
             
             # Save session and asynchronously send to C-Client
             try:

@@ -119,6 +119,7 @@ class ConfigManager:
             'name': f"NSN {current_env.title()} Environment",
             'api_endpoints': {
                 'session_data': f"{base_url}/api/nmp-session-data",
+                'current_user': f"{base_url}/api/current-user",
                 'signup': f"{base_url}/signup",
                 'login': f"{base_url}/login"
             }
